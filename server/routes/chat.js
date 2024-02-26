@@ -51,7 +51,7 @@ const CheckUser = async (req, res, next) => {
 //     organization: process.env.OPENAI_ORGANIZATION,
 //     apiKey: process.env.OPENAI_API_KEY
 // });
-const client = new OpenAI({apiKey: "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"});
+const client = new OpenAI({apiKey: ""});
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 router.get('/', (req, res) => {
     res.send("Welcome to chatGPT api v1")
