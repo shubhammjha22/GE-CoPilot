@@ -138,7 +138,7 @@ const InputArea = ({ status, chatRef, stateAction }) => {
   const handleChange = async () => {
     try {
       const openai = new OpenAI({
-        apiKey: "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",
+        apiKey: "",
         dangerouslyAllowBrowser: true,
       });
       console.log(files)
