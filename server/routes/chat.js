@@ -51,7 +51,7 @@ const CheckUser = async (req, res, next) => {
 //     organization: process.env.OPENAI_ORGANIZATION,
 //     apiKey: process.env.OPENAI_API_KEY
 // });
-
+const client = new OpenAI({apiKey: "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"});
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 router.get('/', (req, res) => {
     res.send("Welcome to chatGPT api v1")
@@ -64,6 +64,7 @@ router.post('/', CheckUser, async (req, res) => {
         "content": prompt,
 
     }]
+    //console.log(prompt, userId)
     console.log(req.body)
 
     let response = {}
@@ -71,14 +72,39 @@ router.post('/', CheckUser, async (req, res) => {
         // Creating Assistant on OpenAI and giving it file_id
         console.log("POST is being called")
         if (file_id) {
-            const assistant = await openai.beta.assistants.create({
+            const assistant = await client.beta.assistants.create({
                 name: "GE CoPilot",
-                instructions: "You are a personal math tutor. Write and run code to answer math questions.",
-                tools: [{ type: "code_interpreter" },{type:"retrieval"}],
-                model: "gpt-4-turbo-preview",
+                instructions: "Summarize the file.",
+                tools: [{type:"retrieval"}],
+                model: "gpt-3.5-turbo",
                 file_ids: [file_id]
               });
               console.log(assistant)
+              const thread = await client.beta.threads.create({
+                messages: [
+                  {
+                    "role": "user",
+                    "content": "Summarize it",
+                    "file_ids": [file_id]
+                  }
+                ]
+              });
+              console.log(thread)
+              const run = await client.beta.threads.runs.create(
+                thread.id,
+                { assistant_id: assistant.id }
+              );
+              console.log(run, thread.id)
+              const final_run = await client.beta.threads.runs.retrieve(
+                thread.id,
+                run.id
+              );
+              console.log(final_run)
+              const messages = await client.beta.threads.messages.list(
+                thread.id
+              );
+              console.log(messages)
+              //console.log(messages.body.data[0].content[0])
         }
         else {
             // If no file_id is given 
