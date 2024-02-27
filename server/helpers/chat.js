@@ -3,17 +3,18 @@ import collections from "../db/collections.js";
 import { ObjectId } from "mongodb";
 
 export default {
-    newResponse: (prompt, { openai }, userId) => {
+    newResponse: (prompt, { openai }, userId, file_id, thread_id) => {
         return new Promise(async (resolve, reject) => {
             let chatId = new ObjectId().toHexString()
             let res = null
-            console.log(prompt)
             try {
                 await db.collection(collections.CHAT).createIndex({ user: 1 }, { unique: true })
                 res = await db.collection(collections.CHAT).insertOne({
                     user: userId.toString(),
                     data: [{
                         chatId,
+                        file_id,
+                        thread_id,
                         chats: [{
                             role:"user",
                             content: prompt
@@ -37,6 +38,8 @@ export default {
                         $push: {
                             data: {
                                 chatId,
+                                file_id,
+                                thread_id,
                                 chats: [{
                                     role:"user",
                                     content: prompt,
@@ -69,7 +72,7 @@ export default {
             }
         })
     },
-    Response: (prompt, { openai }, userId, chatId) => {
+    Response: (prompt, { openai }, userId, chatId, file_id, thread_id) => {
         return new Promise(async (resolve, reject) => {
             let res = null;
             try  {
@@ -79,6 +82,8 @@ export default {
                         "data.chatId": chatId
                     }, {
                         $push: {
+                            "data.$.file_id": file_id,
+                            "data.$.thread_id":thread_id,
                             "data.$.chats": {
                                 $each: [
                                     { role: "user", content: prompt },
