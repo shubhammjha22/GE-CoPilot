@@ -130,7 +130,6 @@ const Menu = ({ changeColorMode }) => {
         console.log(err);
       } finally {
         if (res?.data) {
-          console.log(res.data.data);
           dispatch(addHistory(res?.data?.data));
         }
       }
@@ -200,7 +199,7 @@ const Menu = ({ changeColorMode }) => {
 
         <div className="history">
           {history?.map((obj, key) => {
-            console.log(obj)
+            //console.log(obj)
             if(!obj?.chatId || obj.chat.length === 0) return null;
             if (obj?.active) {
               return (

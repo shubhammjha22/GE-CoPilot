@@ -116,7 +116,6 @@ export default Main;
 const InputArea = ({ status, chatRef, stateAction }) => {
   let textAreaRef = useRef();
   const [files, setFiles] = useState("");
-  console.log(files);
   const navigate = useNavigate();
   const [file_id, set_file_id] = useState(null);
   const dispatch = useDispatch();
@@ -138,7 +137,7 @@ const InputArea = ({ status, chatRef, stateAction }) => {
   const handleChange = async () => {
     try {
       const openai = new OpenAI({
-        apiKey: "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",
+        apiKey: "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",
         dangerouslyAllowBrowser: true,
       });
       console.log(files)
@@ -172,7 +171,7 @@ const InputArea = ({ status, chatRef, stateAction }) => {
           res = await instance.put("/api/chat", {
             chatId: _id,
             prompt,
-            file_id
+            file_id,
           });
           console.log("PUT", res.data)
         } else {
@@ -180,7 +179,6 @@ const InputArea = ({ status, chatRef, stateAction }) => {
           res = await instance.post("/api/chat", {
             prompt,
             file_id,
-            
           });
           console.log("POST", res.data)
         }
@@ -195,15 +193,14 @@ const InputArea = ({ status, chatRef, stateAction }) => {
         }
       } finally {
         if (res?.data) {
-          console.log(res.data)
-          let _id = res?.data?.data?._id;
-          const content = res?.data?.data?.content
-          if (!_id) _id = res?.data?.data?.chatId
+          const { _id, content } = res?.data?.data;
+          console.log(_id, content)
           dispatch(insertNew({ _id, fullContent: content, chatsId }));
 
           chatRef?.current?.loadResponse(stateAction, content, chatsId);
 
           stateAction({ type: "error", status: false });
+          
         }
       }
     }

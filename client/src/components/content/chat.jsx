@@ -29,20 +29,20 @@ const Chat = forwardRef(({ error }, ref) => {
 
     let index = 0
     contentRef.current.innerHTML = response
-    // window.interval = setInterval(() => {
-    //   if (index < response.length && contentRef?.current) {
-    //     if (index === 0) {
-    //       dispatch(insertNew({ chatsId, content: response.charAt(index) }))
-    //       contentRef.current.innerHTML = response.charAt(index)
-    //     } else {
-    //       dispatch(insertNew({ chatsId, content: response.charAt(index), resume: true }))
-    //       contentRef.current.innerHTML += response.charAt(index)
-    //     }
-    //     index++
-    //   } else {
-    //     stopResponse(stateAction)
-    //   }
-    // }, 20)
+    window.interval = setInterval(() => {
+      if (index < response.length && contentRef?.current) {
+        if (index === 0) {
+          dispatch(insertNew({ chatsId, content: response.charAt(index) }))
+          contentRef.current.innerHTML = response.charAt(index)
+        } else {
+          dispatch(insertNew({ chatsId, content: response.charAt(index), resume: true }))
+          contentRef.current.innerHTML += response.charAt(index)
+        }
+        index++
+      } else {
+        stopResponse(stateAction)
+      }
+    }, 20)
 
   }
 
@@ -69,10 +69,10 @@ const Chat = forwardRef(({ error }, ref) => {
     <div className='Chat' ref={ref}>
       {
         all?.filter((obj) => {
-          console.log(all)
+          //console.log(all)
           return !obj.id ? true : obj?.id !== latest?.id
         })?.map((obj, key) => {
-          console.log(obj)
+          //console.log(obj)
           return (
             <Fragment key={key}>
               <div className='qs'>

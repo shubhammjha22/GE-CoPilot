@@ -3,7 +3,7 @@ import collections from "../db/collections.js";
 import { ObjectId } from "mongodb";
 
 export default {
-  newResponse: (prompt, { openai }, userId, file_id, thread_id) => {
+  newResponse: (prompt, { openai }, userId, thread_id) => {
     return new Promise(async (resolve, reject) => {
       let chatId = new ObjectId().toHexString();
       let res = null;
@@ -13,10 +13,10 @@ export default {
           .createIndex({ user: 1 }, { unique: true });
         res = await db.collection(collections.CHAT).insertOne({
           user: userId.toString(),
+          
           data: [
             {
               chatId,
-              file_id,
               thread_id,
               chats: [
                 {
@@ -49,7 +49,6 @@ export default {
                 $push: {
                   data: {
                     chatId,
-                    file_id,
                     thread_id,
                     chats: [
                       {
@@ -88,10 +87,10 @@ export default {
       }
     });
   },
-  Response: (prompt, { openai }, userId, chatId, file_id, thread_id) => {
+  Response: (prompt, { openai }, userId, chatId,  thread_id) => {
     return new Promise(async (resolve, reject) => {
       let res = null;
-      console.log("Oka", prompt, openai, userId, chatId, file_id, thread_id);
+      console.log("Oka", prompt, openai, userId, chatId, thread_id);
       try {
         // If the chat exists, update it by pushing the new chat
         res = await db.collection(collections.CHAT).updateOne(
@@ -101,16 +100,7 @@ export default {
           },
           {
             $push: {
-              ...(thread_id
-                ? {
-                    "data.$.thread_id": thread_id,
-                  }
-                : {}),
-              ...(file_id
-                ? {
-                    "data.$.file_id": [file_id],
-                  }
-                : {}),
+              //"data.$.thread_id" : [thread_id],
               "data.$.chats": {
                 $each: [
                   { role: "user", content: prompt },
@@ -130,7 +120,7 @@ export default {
       } finally {
         if (res) {
           res.chatId = chatId;
-          console.log(chatId);
+          //console.log(chatId);
           resolve(res);
         } else {
           reject({ text: "DB gets something wrong" });
