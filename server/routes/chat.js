@@ -47,64 +47,74 @@ const CheckUser = async (req, res, next) => {
     })
 }
 
-// const configuration = new Configuration({
-//     organization: process.env.OPENAI_ORGANIZATION,
-//     apiKey: process.env.OPENAI_API_KEY
-// });
-const client = new OpenAI({apiKey: ""});
+const client = new OpenAI({ apiKey: "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" });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 router.get('/', (req, res) => {
     res.send("Welcome to chatGPT api v1")
 })
 
 router.post('/', CheckUser, async (req, res) => {
-    const { prompt,file_id ,userId  } = req.body
+    const { prompt, file_id, userId } = req.body
     const messages = [{
         "role": "assistant",
         "content": prompt,
 
     }]
-    //console.log(prompt, userId)
     console.log(req.body)
-
     let response = {}
     try {
         // Creating Assistant on OpenAI and giving it file_id
         console.log("POST is being called")
         if (file_id) {
+            console.log("Assistant running")
             const assistant = await client.beta.assistants.create({
                 name: "GE CoPilot",
-                instructions: "Summarize the file.",
-                tools: [{type:"retrieval"}],
+                instructions: "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+                tools: [{ type: "retrieval" }],
                 model: "gpt-3.5-turbo",
                 file_ids: [file_id]
-              });
-              console.log(assistant)
-              const thread = await client.beta.threads.create({
+            });
+            const thread = await client.beta.threads.create({
                 messages: [
-                  {
-                    "role": "user",
-                    "content": "Summarize it",
-                    "file_ids": [file_id]
-                  }
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
                 ]
-              });
-              console.log(thread)
-              const run = await client.beta.threads.runs.create(
+            });
+            const run = await client.beta.threads.runs.create(
                 thread.id,
                 { assistant_id: assistant.id }
-              );
-              console.log(run, thread.id)
-              const final_run = await client.beta.threads.runs.retrieve(
-                thread.id,
-                run.id
-              );
-              console.log(final_run)
-              const messages = await client.beta.threads.messages.list(
+            );
+            let final_run = "";
+            while (final_run.status !== "completed") {
+                final_run = await client.beta.threads.runs.retrieve(
+                    thread.id,
+                    run.id
+                );
+            }
+            console.log(final_run.status)
+            const messages = await client.beta.threads.messages.list(
                 thread.id
-              );
-              console.log(messages)
-              //console.log(messages.body.data[0].content[0])
+            );
+            console.log(messages.data[0].content[0].text.value)
+            const response = { openai: messages.data[0].content[0].text.value }
+            if (response.openai) {
+                let index = 0
+                for (let c of response['openai']) {
+                    if (index <= 1) {
+                        if (c == '\n') {
+                            response.openai = response.openai.slice(1, response.openai.length)
+                        }
+                    } else {
+                        break;
+                    }
+                    index++
+                }
+                response.db = await chat.newResponse(prompt, response, userId, file_id, thread.id)
+            }
+
         }
         else {
             // If no file_id is given 
@@ -118,16 +128,11 @@ router.post('/', CheckUser, async (req, res) => {
                     "content": prompt
                 }],
                 "top_p": 0.5,
-                //: true
             });
-            // for await (const part of response.openai){
-            //     console.log(part.choices[0].delta.content)
-            // }
-            //  console.log(response.openai.choices[0].message)
             if (response.openai.choices[0].message) {
                 response.openai = response.openai.choices[0].message.content
                 let index = 0
-                //console.log(response['openai'])
+                console.log(response)
                 for (let c of response['openai']) {
                     if (index <= 1) {
                         if (c == '\n') {
@@ -138,7 +143,8 @@ router.post('/', CheckUser, async (req, res) => {
                     }
                     index++
                 }
-                response.db = await chat.newResponse(prompt, response, userId)
+                response.db = await chat.newResponse(prompt, response, userId, file_id, null)
+                //console.log(response.db)
             }
         }
     } catch (err) {
@@ -162,7 +168,7 @@ router.post('/', CheckUser, async (req, res) => {
 })
 
 router.put('/', CheckUser, async (req, res) => {
-    const { prompt, userId, chatId, file_id } = req.body
+    const { prompt, userId, chatId, file_id , thread_id} = req.body
     let mes = {
         "role": "system",
         "content": "You are a helpful and that answers what is asked. Dont show the mathematical steps if not asked.",
@@ -177,41 +183,90 @@ router.put('/', CheckUser, async (req, res) => {
     }]
     let response = {}
     try {
-        response.openai = await openai.chat.completions.create({
-            model: "gpt-4-0125-preview",
-            messages: mes,
-            temperature: 0.68,
-            max_tokens: 256,
-            top_p: 0.52,
-            frequency_penalty: 0,
-            presence_penalty: 0,
-            stream: true
-        });
-        for await (const part of response.openai) {
-            let text = part.choices[0].delta.content ?? ""
-            full += text
-        }
-        response.openai = {
-            role: "assistant",
-            content: full
-        };
-        //response.openai = response.openai.choices[0].message;
-        if (response.openai) {
-            response.openai = response.openai.content
-            let index = 0
-            //  console.log(response['openai'])
-            for (let c of response['openai']) {
-                if (index <= 1) {
-                    if (c == '\n') {
-                        response.openai = response.openai.slice(1, response.openai.length)
-                    }
-                } else {
-                    break;
-                }
-                index++
+        if (file_id) {
+            console.log("Assistant running")
+            const assistant = await client.beta.assistants.create({
+                name: "GE CoPilot",
+                instructions: "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+                tools: [{ type: "retrieval" }],
+                model: "gpt-3.5-turbo",
+                file_ids: [file_id]
+            });
+            const thread = await client.beta.threads.create({
+                messages: mes
+            });
+            const run = await client.beta.threads.runs.create(
+                thread.id,
+                { assistant_id: assistant.id }
+            );
+            let final_run = "";
+            while (final_run.status !== "completed") {
+                final_run = await client.beta.threads.runs.retrieve(
+                    thread.id,
+                    run.id
+                );
             }
-            response.db = await chat.Response(prompt, response, userId, chatId)
+            console.log(final_run.status)
+            const messages = await client.beta.threads.messages.list(
+                thread.id
+            );
+            console.log(messages.data[0].content[0].text.value)
+            const response = { openai: messages.data[0].content[0].text.value }
+            if (response.openai) {
+                let index = 0
+                for (let c of response['openai']) {
+                    if (index <= 1) {
+                        if (c == '\n') {
+                            response.openai = response.openai.slice(1, response.openai.length)
+                        }
+                    } else {
+                        break;
+                    }
+                    index++
+                }
+                response.db = await chat.Response(prompt, response, userId, file_id, file_id)
+            }
         }
+        else {
+            response.openai = await openai.chat.completions.create({
+                model: "gpt-4-0125-preview",
+                messages: mes,
+                temperature: 0.68,
+                max_tokens: 256,
+                top_p: 0.52,
+                frequency_penalty: 0,
+                presence_penalty: 0,
+                stream: true
+            });
+            for await (const part of response.openai) {
+                let text = part.choices[0].delta.content ?? ""
+                full += text
+            }
+            response.openai = {
+                role: "assistant",
+                content: full
+            };
+            //response.openai = response.openai.choices[0].message;
+            if (response.openai) {
+                response.openai = response.openai.content
+                console.log(response.openai)
+                let index = 0
+                //  console.log(response['openai'])
+                for (let c of response['openai']) {
+                    if (index <= 1) {
+                        if (c == '\n') {
+                            response.openai = response.openai.slice(1, response.openai.length)
+                        }
+                    } else {
+                        break;
+                    }
+                    index++
+                }
+
+                response.db = await chat.Response(prompt, response, userId, chatId, file_id)
+            }
+        }
+
     } catch (err) {
         res.status(500).json({
             status: 500,
