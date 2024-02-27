@@ -195,8 +195,10 @@ const InputArea = ({ status, chatRef, stateAction }) => {
         }
       } finally {
         if (res?.data) {
-          const { _id, content } = res?.data?.data;
-
+          console.log(res.data)
+          let _id = res?.data?.data?._id;
+          const content = res?.data?.data?.content
+          if (!_id) _id = res?.data?.data?.chatId
           dispatch(insertNew({ _id, fullContent: content, chatsId }));
 
           chatRef?.current?.loadResponse(stateAction, content, chatsId);
