@@ -34,7 +34,8 @@ const config = {
     secretAccessKey: SECRET_ACCESS_KEY,
 }
 
-const Menu = ({ changeColorMode }) => {
+const Menu = ({ changeColorMode, file_id, set_file_id }) => {
+  console.log(file_id)
   let path = window.location.pathname;
   const user = useSelector((state) => state.user);
   const menuRef = useRef(null);
@@ -190,6 +191,7 @@ const Menu = ({ changeColorMode }) => {
               } else {
                 navigate("/chat");
               }
+              set_file_id(null);
             }}
           >
             <Plus />

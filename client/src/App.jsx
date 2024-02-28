@@ -8,7 +8,7 @@ import Loading from "./components/loading/loading";
 
 const App = () => {
   const [offline, setOffline] = useState(!window.navigator.onLine);
-
+  const [file_id, set_file_id] = useState(null);
   const { loading, user } = useSelector((state) => state);
 
   const changeColorMode = (to) => {
@@ -49,7 +49,7 @@ const App = () => {
     <section className={user ? "main-grid" : null}>
       {user && (
         <div>
-          <Menu changeColorMode={changeColorMode} />
+          <Menu changeColorMode={changeColorMode} file_id={file_id} set_file_id={set_file_id} />
         </div>
       )}
 
@@ -64,9 +64,9 @@ const App = () => {
 
       <Routes>
         <Route element={<ProtectedRoute offline={offline} authed={true} />}>
-          <Route exact path="/" element={<Main />} />
-          <Route path="/chat" element={<Main />} />
-          <Route path="/chat/:id" element={<Main />} />
+          <Route exact path="/" element={<Main file_id={file_id} set_file_id={set_file_id} />} />
+          <Route path="/chat" element={<Main file_id={file_id} set_file_id={set_file_id} />} />
+          <Route path="/chat/:id" element={<Main file_id={file_id} set_file_id={set_file_id} />} />
         </Route>
 
         <Route element={<ProtectedRoute offline={offline} />}>

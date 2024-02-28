@@ -13,7 +13,7 @@ export default {
           .createIndex({ user: 1 }, { unique: true });
         res = await db.collection(collections.CHAT).insertOne({
           user: userId.toString(),
-          
+
           data: [
             {
               chatId,
@@ -87,32 +87,40 @@ export default {
       }
     });
   },
-  Response: (prompt, { openai }, userId, chatId,  thread_id) => {
+  Response: (prompt, { openai }, userId, chatId, assistant_id) => {
     return new Promise(async (resolve, reject) => {
       let res = null;
-      console.log("Oka", prompt, openai, userId, chatId, thread_id);
+      console.log("Oka", prompt, openai, userId, chatId, assistant_id);
       try {
-        // If the chat exists, update it by pushing the new chat
+        let updateObj = {
+          $push: {
+            "data.$.chats": {
+              $each: [
+                { role: "user", content: prompt },
+                { role: "assistant", content: openai },
+              ],
+            },
+            "data.$.chat": {
+              prompt: prompt,
+              content: openai,
+            },
+          },
+        };
+
+        // If assistant_id is null, set it to the incoming assistant_id
+        if (assistant_id !== null) {
+          updateObj.$set = {
+            "data.$.assistant_id": assistant_id,
+          };
+        }
+
+        // Execute the update operation
         res = await db.collection(collections.CHAT).updateOne(
           {
             user: userId.toString(),
             "data.chatId": chatId,
           },
-          {
-            $push: {
-              //"data.$.thread_id" : [thread_id],
-              "data.$.chats": {
-                $each: [
-                  { role: "user", content: prompt },
-                  { role: "assistant", content: openai },
-                ],
-              },
-              "data.$.chat": {
-                prompt: prompt,
-                content: openai,
-              },
-            },
-          }
+          updateObj
         );
       } catch (err) {
         console.log(err);
