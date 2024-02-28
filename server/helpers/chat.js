@@ -3,7 +3,7 @@ import collections from "../db/collections.js";
 import { ObjectId } from "mongodb";
 
 export default {
-  newResponse: (prompt, { openai }, userId, thread_id) => {
+  newResponse: (prompt, { openai }, userId, assistant_id) => {
     return new Promise(async (resolve, reject) => {
       let chatId = new ObjectId().toHexString();
       let res = null;
@@ -17,7 +17,7 @@ export default {
           data: [
             {
               chatId,
-              thread_id,
+              assistant_id,
               chats: [
                 {
                   role: "user",
@@ -49,7 +49,7 @@ export default {
                 $push: {
                   data: {
                     chatId,
-                    thread_id,
+                    assistant_id,
                     chats: [
                       {
                         role: "user",

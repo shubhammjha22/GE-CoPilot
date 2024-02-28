@@ -59,7 +59,7 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", CheckUser, async (req, res) => {
-    const { prompt, file_id, userId } = req.body;
+    const { prompt, file_id, userId, assistant_id} = req.body;
     const messages = [
         {
             role: "assistant",
@@ -73,14 +73,14 @@ router.post("/", CheckUser, async (req, res) => {
         console.log("POST is being called");
         if (file_id) {
             console.log("Assistant running");
-            const assistant = await client.beta.assistants.create({
-                name: "GE CoPilot",
-                instructions:
-                    "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
-                tools: [{ type: "retrieval" }],
-                model: "gpt-3.5-turbo",
-                file_ids: [file_id],
-            });
+            // const assistant = await client.beta.assistants.create({
+            //     name: "GE CoPilot",
+            //     instructions:
+            //         "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+            //     tools: [{ type: "retrieval" }],
+            //     model: "gpt-3.5-turbo",
+            //     file_ids: [file_id],
+            // });
             const thread = await client.beta.threads.create({
                 messages: [
                     {
@@ -90,7 +90,7 @@ router.post("/", CheckUser, async (req, res) => {
                 ],
             });
             const run = await client.beta.threads.runs.create(thread.id, {
-                assistant_id: assistant.id,
+                assistant_id: assistant_id,
             });
             let final_run = "";
             while (final_run.status !== "completed") {
@@ -120,7 +120,7 @@ router.post("/", CheckUser, async (req, res) => {
                     prompt,
                     response,
                     userId,
-                    thread.id
+                    assistant_id
                 );
             }
         } else {
@@ -161,7 +161,7 @@ router.post("/", CheckUser, async (req, res) => {
                     prompt,
                     response,
                     userId,
-                    ""
+                    assistant_id,
                 );
                 //console.log(response.db)
             }
@@ -188,7 +188,7 @@ router.post("/", CheckUser, async (req, res) => {
 });
 
 router.put("/", CheckUser, async (req, res) => {
-    const { prompt, userId, chatId, file_id } = req.body;
+    const { prompt, userId, chatId, file_id , assistant_id} = req.body;
     //console.log(req.body)
     let mes = {
         role: "system",
@@ -212,15 +212,15 @@ router.put("/", CheckUser, async (req, res) => {
     try {
         if (file_id) {
             console.log("Assistant running");
-            const assistant = await client.beta.assistants.create({
-                name: "GE CoPilot",
-                instructions:
-                    "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
-                tools: [{ type: "retrieval" }],
-                model: "gpt-3.5-turbo",
-                file_ids: [file_id],
-            });
-            console.log(assistant);
+            // const assistant = await client.beta.assistants.create({
+            //     name: "GE CoPilot",
+            //     instructions:
+            //         "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+            //     tools: [{ type: "retrieval" }],
+            //     model: "gpt-3.5-turbo",
+            //     file_ids: [file_id],
+            // });
+            // console.log(assistant);
             const thread = await client.beta.threads.create({
                 messages: [
                     {
@@ -231,7 +231,7 @@ router.put("/", CheckUser, async (req, res) => {
             });
             console.log(thread);
             const run = await client.beta.threads.runs.create(thread.id, {
-                assistant_id: assistant.id,
+                assistant_id: assistant_id,
             });
             console.log(run);
             let final_run = "";

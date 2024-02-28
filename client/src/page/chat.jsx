@@ -119,6 +119,7 @@ const InputArea = ({ status, chatRef, stateAction }) => {
   const navigate = useNavigate();
   const [file_id, set_file_id] = useState(null);
   const dispatch = useDispatch();
+  const [assistant_id, set_assistant_id] = useState(null);
 
   const { prompt, content, _id } = useSelector((state) => state.messages);
   
@@ -136,18 +137,28 @@ const InputArea = ({ status, chatRef, stateAction }) => {
   });
   const handleChange = async () => {
     try {
-      const openai = new OpenAI({
+      const client = new OpenAI({
         apiKey: "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",
         dangerouslyAllowBrowser: true,
       });
       console.log(files)
-      const file_n = await openai.files.create({
+      const file_n = await client.files.create({
         purpose: "assistants",
         file: files,
       });
-      console.log(file_n)
+      console.log("Assistant is being created")
+      const assistant = await client.beta.assistants.create({
+        name: "GE CoPilot",
+        instructions:
+            "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+        tools: [{ type: "retrieval" }],
+        model: "gpt-3.5-turbo",
+        file_ids: [file_n.id],
+    });
+      //console.log(file_n)
       console.log(file_n.id);
       set_file_id(file_n.id);
+      set_assistant_id(assistant.id)
       setFiles("")
     } catch (error) {
       console.log(error);
@@ -172,6 +183,7 @@ const InputArea = ({ status, chatRef, stateAction }) => {
             chatId: _id,
             prompt,
             file_id,
+            assistant_id,
           });
           console.log("PUT", res.data)
         } else {
@@ -179,6 +191,7 @@ const InputArea = ({ status, chatRef, stateAction }) => {
           res = await instance.post("/api/chat", {
             prompt,
             file_id,
+            assistant_id
           });
           console.log("POST", res.data)
         }
