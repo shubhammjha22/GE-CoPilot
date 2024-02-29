@@ -215,13 +215,71 @@ router.put("/", CheckUser, async (req, res) => {
   new_chat = new_chat[0];
   console.log("new chat", new_chat, file_id);
   if (!new_chat.assistant_id && file_id) {
+    await db.collection(collections.CHAT).updateOne(
+      {
+        user: userId.toString(),
+        "data.chatId": chatId,
+      },
+      {
+        $push: {
+          "data.$.files": file_id,
+        },
+      }
+    );
+    const updated_data = await db.collection(collections.CHAT).findOne({
+      user: userId.toString(),
+      "data.chatId": chatId,
+    });
+    console.log("ok waiting for update: ", updated_data.data);
+    const final_chat = updated_data.data.filter((chat) => {
+      return chat.chatId === chatId;
+    })[0];
+    console.log("Final Chat", final_chat);
     const assistant = await client.beta.assistants.create({
       name: "GE CoPilot",
       instructions:
         "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
       tools: [{ type: "retrieval" }],
       model: "gpt-3.5-turbo",
-      file_ids: [file_id],
+      file_ids: final_chat.files,
+    });
+    console.log(assistant);
+    assistant_id = assistant.id;
+  } else if (new_chat.assistant_id && file_id) {
+    console.log("assistant and file wjhebskejdnalkewda")
+    await db
+      .collection(collections.CHAT)
+      .findOneAndUpdate(
+        {
+          user: userId.toString(),
+          "data.chatId": chatId,
+        },
+        {
+          $push: {
+            "data.$.files": file_id,
+          },
+        }
+      );
+      const updated_chat = await db
+      .collection(collections.CHAT)
+      .findOne(
+        {
+          user: userId.toString(),
+          "data.chatId": chatId,
+        }
+      );
+    const final_chat = updated_chat.data.filter((chat) => {
+      return chat.chatId === chatId;
+    })[0];
+    console.log("Final CHat: ", final_chat);
+    console.log("Assistant Id: ", final_chat.assistant_id);
+    const assistant = await client.beta.assistants.create({
+      name: "GE CoPilot",
+      instructions:
+        "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+      tools: [{ type: "retrieval" }],
+      model: "gpt-3.5-turbo",
+      file_ids: final_chat.files,
     });
     console.log(assistant);
     assistant_id = assistant.id;
@@ -241,7 +299,7 @@ router.put("/", CheckUser, async (req, res) => {
           },
         ],
       });
-      console.log(thread);
+      console.log(thread, assistant_id);
       const run = await client.beta.threads.runs.create(thread.id, {
         assistant_id: assistant_id,
       });

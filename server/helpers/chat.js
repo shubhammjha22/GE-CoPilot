@@ -18,6 +18,7 @@ export default {
             {
               chatId,
               assistant_id,
+              files: [],
               chats: [
                 {
                   role: "user",
@@ -50,6 +51,7 @@ export default {
                   data: {
                     chatId,
                     assistant_id,
+                    files: [],
                     chats: [
                       {
                         role: "user",
@@ -90,7 +92,6 @@ export default {
   Response: (prompt, { openai }, userId, chatId, assistant_id) => {
     return new Promise(async (resolve, reject) => {
       let res = null;
-      console.log("Oka", prompt, openai, userId, chatId, assistant_id);
       try {
         let updateObj = {
           $push: {
@@ -104,6 +105,7 @@ export default {
               prompt: prompt,
               content: openai,
             },
+            
           },
         };
 
