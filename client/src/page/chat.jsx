@@ -138,7 +138,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
   const handleChange = async () => {
     try {
       const client = new OpenAI({
-        apiKey: "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",
+        apiKey: "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",
         dangerouslyAllowBrowser: true,
       });
       console.log(files)
