@@ -138,7 +138,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
   const handleChange = async () => {
     try {
       const client = new OpenAI({
-        apiKey: "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",
+        apiKey: "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",
         dangerouslyAllowBrowser: true,
       });
       console.log(files)
@@ -269,7 +269,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
                 <input
                   type="file"
                   id="fileInput"
-                  accept=".png, .jpg, .pdf"
+                  //accept=".png, .jpg, .pdf"
                   style={{ display: "none", cursor: "pointer" }}
                   onChange={(e) => setFiles(e.target.files[0])}
                 />
