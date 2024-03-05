@@ -27,24 +27,24 @@ const Chat = forwardRef(({ error }, ref) => {
 
     contentRef?.current?.classList?.add("blink")
 
-    let index = 0
+    // let index = 0
     contentRef.current.innerHTML = response
-    window.interval = setInterval(() => {
-      if (index < response.length && contentRef?.current) {
-        if (index === 0) {
-          dispatch(insertNew({ chatsId, content: response.charAt(index) }))
-          contentRef.current.innerHTML = response.charAt(index)
-        } else {
-          dispatch(insertNew({ chatsId, content: response.charAt(index), resume: true }))
-          contentRef.current.innerHTML += response.charAt(index)
-        }
-        index++
-      } else {
+    // window.interval = setInterval(() => {
+      // if (index < response.length && contentRef?.current) {
+        // if (index === 0) {
+          dispatch(insertNew({ chatsId, content: response }))
+          contentRef.current.innerHTML = response
+        // } else {
+        //   dispatch(insertNew({ chatsId, content: response.charAt(index), resume: true }))
+        //   contentRef.current.innerHTML += response.charAt(index)
+        // }
+        // index++
+      // } else {
         stopResponse(stateAction)
       }
-    }, 20)
+    // }, 20)
 
-  }
+  // }
 
   const stopResponse = (stateAction) => {
     if (contentRef?.current) {

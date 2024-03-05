@@ -40,7 +40,7 @@ const reducer = (state, { type, status }) => {
   }
 };
 
-const Main = ({file_id, set_file_id}) => {
+const Main = ({ file_id, set_file_id }) => {
   let location = useLocation();
 
   const navigate = useNavigate();
@@ -58,7 +58,6 @@ const Main = ({file_id, set_file_id}) => {
     error: false,
     actionBtns: false,
   });
-
 
   useEffect(() => {
     if (user) {
@@ -105,7 +104,13 @@ const Main = ({file_id, set_file_id}) => {
         {status.chat ? <Chat ref={chatRef} error={status.error} /> : <New />}
       </div>
 
-      <InputArea status={status} chatRef={chatRef} stateAction={stateAction} file_id={file_id} set_file_id={set_file_id} />
+      <InputArea
+        status={status}
+        chatRef={chatRef}
+        stateAction={stateAction}
+        file_id={file_id}
+        set_file_id={set_file_id}
+      />
     </div>
   );
 };
@@ -122,7 +127,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
   // const [assistant_id, set_assistant_id] = useState(null);
 
   const { prompt, content, _id } = useSelector((state) => state.messages);
-  
+
   useEffect(() => {
     if (files) {
       handleChange();
@@ -141,25 +146,26 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
         apiKey: "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",
         dangerouslyAllowBrowser: true,
       });
-      console.log(files)
+      console.log(files);
       const file_n = await client.files.create({
         purpose: "assistants",
         file: files,
       });
-    //   console.log("Assistant is being created")
-    //   const assistant = await client.beta.assistants.create({
-    //     name: "GE CoPilot",
-    //     instructions:
-    //         "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
-    //     tools: [{ type: "retrieval" }],
-    //     model: "gpt-3.5-turbo",
-    //     file_ids: [file_n.id],
-    // });
-    //   //console.log(file_n)
+      //   console.log("Assistant is being created")
+      //   const assistant = await client.beta.assistants.create({
+      //     name: "GE CoPilot",
+      //     instructions:
+      //         "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+      //     tools: [{ type: "retrieval" }],
+      //     model: "gpt-3.5-turbo",
+      //     file_ids: [file_n.id],
+      // });
+      //   //console.log(file_n)
       console.log(file_n.id);
+      alert(`File successfully uploaded! You can now chat with: ${files.name}`);
       set_file_id(file_n.id);
       // set_assistant_id(assistant.id)
-      setFiles("")
+      setFiles("");
     } catch (error) {
       console.log(error);
     }
@@ -185,7 +191,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
             file_id,
             // assistant_id,
           });
-          console.log("PUT", res.data)
+          console.log("PUT", res.data);
         } else {
           dispatch(livePrompt(""));
           res = await instance.post("/api/chat", {
@@ -193,7 +199,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
             file_id,
             // assistant_id
           });
-          console.log("POST", res.data)
+          console.log("POST", res.data);
         }
       } catch (err) {
         console.log(err.response.data);
@@ -207,13 +213,12 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
       } finally {
         if (res?.data) {
           const { _id, content } = res?.data?.data;
-          console.log(_id, content)
+          console.log(_id, content);
           dispatch(insertNew({ _id, fullContent: content, chatsId }));
 
           chatRef?.current?.loadResponse(stateAction, content, chatsId);
 
           stateAction({ type: "error", status: false });
-          
         }
       }
     }
@@ -264,12 +269,12 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
           </div>
 
           <div className="flexBody">
-            <div className="upload-file">
+            <div className="upload-file" style={{ cursor: "pointer" }}>
               <label htmlFor="fileInput">
                 <input
                   type="file"
                   id="fileInput"
-                  //accept=".png, .jpg, .pdf"
+                  accept="application/pdf,text/plain,text/csv"
                   style={{ display: "none", cursor: "pointer" }}
                   onChange={(e) => setFiles(e.target.files[0])}
                 />

@@ -20,27 +20,29 @@ import ReactS3 from "react-s3";
 import instance from "../../config/instance";
 import "./style.scss";
 import { Buffer } from "buffer";
+import File from "../../assets/file";
 window.Buffer = Buffer;
 
-const S3_BUCKET="grant-copilot"
-const REGION="us-east-1"
-const ACCESS_KEY="AKIAY7BEJYRC3YUJH3FO"
-const SECRET_ACCESS_KEY="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"
+const S3_BUCKET = "grant-copilot";
+const REGION = "us-east-1";
+const ACCESS_KEY = "AKIAY7BEJYRC3YUJH3FO";
+const SECRET_ACCESS_KEY = "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";
 
 const config = {
-    bucketName: S3_BUCKET,
-    region: REGION,
-    accessKeyId: ACCESS_KEY,
-    secretAccessKey: SECRET_ACCESS_KEY,
-}
+  bucketName: S3_BUCKET,
+  region: REGION,
+  accessKeyId: ACCESS_KEY,
+  secretAccessKey: SECRET_ACCESS_KEY,
+};
 
 const Menu = ({ changeColorMode, file_id, set_file_id }) => {
-  console.log(file_id)
+  console.log(file_id);
   let path = window.location.pathname;
   const user = useSelector((state) => state.user);
   const menuRef = useRef(null);
   const btnRef = useRef(null);
   const settingRef = useRef(null);
+  const documentRef = useRef(null);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -149,9 +151,10 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
 
   return (
     <Fragment>
-      <Modal
+      <Modal changeColorMode={changeColorMode} settingRef={settingRef} />
+      <DocumentModal
         changeColorMode={changeColorMode}
-        settingRef={settingRef}
+        documentRef={documentRef}
       />
 
       <header>
@@ -202,7 +205,7 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
         <div className="history">
           {history?.map((obj, key) => {
             //console.log(obj)
-            if(!obj?.chatId || obj.chat.length === 0) return null;
+            if (!obj?.chatId || obj.chat.length === 0) return null;
             if (obj?.active) {
               return (
                 <button
@@ -233,6 +236,17 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
         </div>
 
         <div className="actions">
+          <button
+            onClick={() => {
+              if (documentRef?.current) {
+                documentRef.current.classList.add("clicked");
+                documentRef.current.style.display = "flex";
+              }
+            }}
+          >
+            <File />
+            Attached Documents
+          </button>
           {history?.length > 0 && (
             <>
               {confirm ? (
@@ -298,46 +312,49 @@ const Modal = ({ changeColorMode, settingRef }) => {
   const fileInputRef = useRef(null);
   const user = useSelector((state) => state.user);
 
-
   const updateUser = async () => {
     // Gather input values
-    const firstName = document.getElementById('first-name').value;
-    const lastName = document.getElementById('last-name').value;
+    const firstName = document.getElementById("first-name").value;
+    const lastName = document.getElementById("last-name").value;
     let profilePicture = fileInputRef.current.files[0]; // Get the selected file
-    console.log(profilePicture)
+    console.log(profilePicture);
     try {
-      const data = await ReactS3.uploadFile(profilePicture, config)
-      profilePicture = data.location
-      console.log("first name")
+      const data = await ReactS3.uploadFile(profilePicture, config);
+      profilePicture = data.location;
+      console.log("first name");
       // console.log(data.location)
       // Create FormData to send data
       const formData = new FormData();
-      formData.append('email', user?.email);
-      formData.append('firstName', firstName);
-      formData.append('lastName', lastName);
-      formData.append('profilePicture', profilePicture);
+      formData.append("email", user?.email);
+      formData.append("firstName", firstName);
+      formData.append("lastName", lastName);
+      formData.append("profilePicture", profilePicture);
       // Make request to update user with FormData
-      const response = await instance.post('/api/user/update_profile', formData, {
-        headers: {
-          'Content-Type': 'application/json', // Set content type to  multipart/form-data
-        },
-      });
-  
+      const response = await instance.post(
+        "/api/user/update_profile",
+        formData,
+        {
+          headers: {
+            "Content-Type": "application/json", // Set content type to  multipart/form-data
+          },
+        }
+      );
+
       // Handle response here
-      console.log('Update successful:', response.data);
+      console.log("Update successful:", response.data);
     } catch (err) {
-      console.error('Error updating user:', err);
+      console.error("Error updating user:", err);
       if (err?.response?.status === 405) {
-        alert('Not Logged');
+        alert("Not Logged");
         dispatch(emptyUser());
-        navigate('/login');
+        navigate("/login");
       } else {
-        alert('An error occurred while updating user');
+        alert("An error occurred while updating user");
       }
     } finally {
       window.location.reload();
     }
-  };  
+  };
 
   const deleteAccount = async () => {
     if (window.confirm("Do you want delete your account")) {
@@ -416,10 +433,13 @@ const Modal = ({ changeColorMode, settingRef }) => {
               </button>
             </div>
 
-            <button className="content-button" onClick={() => {
-              settingRef.current.style.display = "none";
-              updateUser();
-            }}>
+            <button
+              className="content-button"
+              onClick={() => {
+                settingRef.current.style.display = "none";
+                updateUser();
+              }}
+            >
               Update
             </button>
           </div>
@@ -428,6 +448,57 @@ const Modal = ({ changeColorMode, settingRef }) => {
           <button className="end" onClick={deleteAccount}>
             Delete account
           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DocumentModal = ({ changeColorMode, documentRef }) => {
+  const user = useSelector((state) => state);
+  const documents = [
+    "Shashank Docs",
+    "Shashank Docs",
+    "Shashank Docs",
+    "Shashank Docs",
+    "Shashank Docs",
+  ];
+  console.log(user);
+  return (
+    <div
+      className="settingsModal"
+      ref={documentRef}
+      onClick={(e) => {
+        let inner = documentRef.current.childNodes;
+        if (!inner?.[0]?.contains(e.target)) {
+          documentRef.current.style.display = "none";
+        }
+      }}
+    >
+      <div className="inner">
+        <div
+          className="content top"
+          style={{ display: "flex", flexDirection: "row" }}
+        >
+          <h3>Attached Documents</h3>
+          <button
+            onClick={() => {
+              documentRef.current.style.display = "none";
+            }}
+          >
+            <Xicon />
+          </button>
+        </div>
+        <div className="content ceneter">
+          {documents.map((doc, index) => {
+            return (
+              <div key={index}>
+                <p>
+                  {index}. {doc}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
