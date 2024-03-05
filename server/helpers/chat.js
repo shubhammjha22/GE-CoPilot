@@ -52,7 +52,7 @@ export default {
                   data: {
                     chatId,
                     assistant_id,
-                    file_name:file_name,
+                    file_name,
                     chats: [
                       {
                         role: "user",
