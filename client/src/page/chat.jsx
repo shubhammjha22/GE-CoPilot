@@ -122,7 +122,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
   let textAreaRef = useRef();
   const [files, setFiles] = useState("");
   const navigate = useNavigate();
-  // const [file_id, set_file_id] = useState(null);
+  const [file_name, set_file_name] = useState(null);
   const dispatch = useDispatch();
   // const [assistant_id, set_assistant_id] = useState(null);
 
@@ -151,18 +151,9 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
         purpose: "assistants",
         file: files,
       });
-      //   console.log("Assistant is being created")
-      //   const assistant = await client.beta.assistants.create({
-      //     name: "GE CoPilot",
-      //     instructions:
-      //         "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
-      //     tools: [{ type: "retrieval" }],
-      //     model: "gpt-3.5-turbo",
-      //     file_ids: [file_n.id],
-      // });
-      //   //console.log(file_n)
       console.log(file_n.id);
       alert(`File successfully uploaded! You can now chat with: ${files.name}`);
+      set_file_name(files.name)
       set_file_id(file_n.id);
       // set_assistant_id(assistant.id)
       setFiles("");
@@ -189,6 +180,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
             chatId: _id,
             prompt,
             file_id,
+            file_name
             // assistant_id,
           });
           console.log("PUT", res.data);
@@ -197,6 +189,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
           res = await instance.post("/api/chat", {
             prompt,
             file_id,
+            file_name
             // assistant_id
           });
           console.log("POST", res.data);

@@ -59,7 +59,7 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", CheckUser, async (req, res) => {
-  const { prompt, file_id, userId } = req.body;
+  const { prompt, file_id, userId,file_name } = req.body;
   const messages = [
     {
       role: "assistant",
@@ -70,7 +70,7 @@ router.post("/", CheckUser, async (req, res) => {
   let response = {};
   try {
     // Creating Assistant on OpenAI and giving it file_id
-    console.log("POST is being called");
+    console.log("POST is being called", req.body);
     if (file_id) {
       console.log("Assistant running");
       const assistant = await client.beta.assistants.create({
@@ -120,7 +120,8 @@ router.post("/", CheckUser, async (req, res) => {
           prompt,
           response,
           userId,
-          assistant.id
+          assistant.id,
+          file_name
         );
       }
     } else {
@@ -183,8 +184,8 @@ router.post("/", CheckUser, async (req, res) => {
 });
 
 router.put("/", CheckUser, async (req, res) => {
-  const { prompt, userId, chatId, file_id } = req.body;
-  //console.log(req.body)
+  const { prompt, userId, chatId, file_id,file_name } = req.body;
+  console.log("PUT is being called",req.body)
   let mes = {
     role: "system",
     content:
@@ -334,7 +335,8 @@ router.put("/", CheckUser, async (req, res) => {
           response,
           userId,
           chatId,
-          assistant_id
+          assistant_id,
+          file_name
         );
       }
     } else {
@@ -381,7 +383,8 @@ router.put("/", CheckUser, async (req, res) => {
           response,
           userId,
           chatId,
-          assistant_id
+          assistant_id,
+          file_name
         );
       }
     }
@@ -478,6 +481,32 @@ router.delete("/all", CheckUser, async (req, res) => {
       res.status(200).json({
         status: 200,
         message: "Success",
+      });
+    }
+  }
+});
+
+//Router for Attached Documnets Modal
+
+
+router.get("/getfile", async (req, res) => {
+  const { userId, chatId } = req.body;
+
+  let response = null;
+
+  try {
+    response = await chat.getFiles(userId,chatId);
+  } catch (err) {
+    res.status(500).json({
+      status: 500,
+      message: err,
+    });
+  } finally {
+    if (response) {
+      res.status(200).json({
+        status: 200,
+        message: "Success",
+        data: response,
       });
     }
   }

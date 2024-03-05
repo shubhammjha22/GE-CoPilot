@@ -3,7 +3,7 @@ import collections from "../db/collections.js";
 import { ObjectId } from "mongodb";
 
 export default {
-  newResponse: (prompt, { openai }, userId, assistant_id) => {
+  newResponse: (prompt, { openai }, userId, assistant_id,file_name) => {
     return new Promise(async (resolve, reject) => {
       let chatId = new ObjectId().toHexString();
       let res = null;
@@ -19,6 +19,7 @@ export default {
               chatId,
               assistant_id,
               files: [],
+              file_name:[file_name],
               chats: [
                 {
                   role: "user",
@@ -51,7 +52,7 @@ export default {
                   data: {
                     chatId,
                     assistant_id,
-                    files: [],
+                    file_name:file_name,
                     chats: [
                       {
                         role: "user",
@@ -89,7 +90,7 @@ export default {
       }
     });
   },
-  Response: (prompt, { openai }, userId, chatId, assistant_id) => {
+  Response: (prompt, { openai }, userId, chatId, assistant_id,file_name) => {
     return new Promise(async (resolve, reject) => {
       let res = null;
       try {
@@ -105,10 +106,14 @@ export default {
               prompt: prompt,
               content: openai,
             },
-            
           },
         };
-
+         // If file_name is not empty and not already present in the array, push it
+        if (file_name && file_name.trim() !== "") {
+          updateObj.$addToSet = {
+              "data.$.file_name": file_name
+          };
+      }
         // If assistant_id is null, set it to the incoming assistant_id
         if (assistant_id !== null) {
           updateObj.$set = {
@@ -263,6 +268,8 @@ export default {
         });
     });
   },
+
+  //Get all message for OpenAI History
   Messages: (userId, chatId) => {
     return new Promise(async (resolve, reject) => {
       let res = await db
@@ -300,4 +307,44 @@ export default {
       }
     });
   },
+  //Get all file name
+  getFiles: (userId, chatId) => {
+    return new Promise(async (resolve, reject) => {
+      let res = await db
+        .collection(collections.CHAT)
+        .aggregate([
+          {
+            $match: {
+              user: userId.toString(),
+            },
+          },
+          {
+            $unwind: "$data",
+          },
+          {
+            $match: {
+              "data.chatId": chatId,
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              file_name: "$data.file_name", // Project the entire 'FileName' array
+            },
+          },
+        ])
+        .toArray()
+        .catch((err) => {
+          reject(err);
+        });
+
+      if (Array.isArray(res)) {
+        resolve(res);
+      } else {
+        reject({ text: "DB Getting Some Error" });
+      }
+    });
+  },
+
 };
+
