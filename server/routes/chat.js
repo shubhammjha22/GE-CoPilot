@@ -186,7 +186,7 @@ router.post("/", CheckUser, async (req, res) => {
 
 router.put("/", CheckUser, async (req, res) => {
   const { prompt, userId, chatId, file_id,file_name } = req.body;
-  console.log("PUT is being called",req.body)
+  console.log("PUT is being called",req.body, file_id)
   let mes = {
     role: "system",
     content:

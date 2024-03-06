@@ -205,6 +205,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
         }
       } finally {
         if (res?.data) {
+          set_file_id(null)
           const { _id, content } = res?.data?.data;
           console.log(_id, content);
           dispatch(insertNew({ _id, fullContent: content, chatsId }));

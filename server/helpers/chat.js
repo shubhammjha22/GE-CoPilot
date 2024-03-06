@@ -3,80 +3,79 @@ import collections from "../db/collections.js";
 import { ObjectId } from "mongodb";
 
 export default {
-  newResponse: (prompt, { openai }, userId, assistant_id,file_id,file_name) => {
+  newResponse: (prompt, { openai }, userId, assistant_id, file_id, file_name) => {
+    console.log(file_id, file_name)
     return new Promise(async (resolve, reject) => {
       let chatId = new ObjectId().toHexString();
       let res = null;
       try {
-        await db
-          .collection(collections.CHAT)
-          .createIndex({ user: 1 }, { unique: true });
-        res = await db.collection(collections.CHAT).insertOne({
-          user: userId.toString(),
-
-          data: [
+        await db.collection(collections.CHAT).createIndex({ user: 1 }, { unique: true });
+        let dataObj = {
+          chatId,
+          assistant_id,
+          chats: [
             {
-              chatId,
-              assistant_id,
-              files: [file_id],
-              file_name:[file_name],
-              chats: [
-                {
-                  role: "user",
-                  content: prompt,
-                },
-                {
-                  role: "assistant",
-                  content: openai,
-                },
-              ],
-              chat: [
-                {
-                  prompt: prompt,
-                  content: openai,
-                },
-              ],
+              role: "user",
+              content: prompt,
+            },
+            {
+              role: "assistant",
+              content: openai,
             },
           ],
+          chat: [
+            {
+              prompt: prompt,
+              content: openai,
+            },
+          ],
+        };
+  
+        if (file_id !== undefined) {
+          dataObj.files = [file_id];
+          dataObj.file_name = [file_name];
+        }
+  
+        res = await db.collection(collections.CHAT).insertOne({
+          user: userId.toString(),
+          data: [dataObj],
         });
       } catch (err) {
         if (err?.code === 11000) {
-          res = await db
-            .collection(collections.CHAT)
-            .updateOne(
-              {
-                user: userId.toString(),
-              },
-              {
-                $push: {
-                  data: {
-                    chatId,
-                    assistant_id,
-                    files : [file_id],
-                    file_name:[file_name],
-                    chats: [
-                      {
-                        role: "user",
-                        content: prompt,
-                      },
-                      {
-                        role: "assistant",
-                        content: openai,
-                      },
-                    ],
-                    chat: [
-                      {
-                        prompt: prompt,
-                        content: openai,
-                      },
-                    ],
+          let updateQuery = {
+            user: userId.toString(),
+          };
+          let pushQuery = {
+            $push: {
+              data: {
+                chatId,
+                assistant_id,
+                chats: [
+                  {
+                    role: "user",
+                    content: prompt,
                   },
-                },
-              }
-            )
-            .catch((err) => {
-              reject(err);
-            });
+                  {
+                    role: "assistant",
+                    content: openai,
+                  },
+                ],
+                chat: [
+                  {
+                    prompt: prompt,
+                    content: openai,
+                  },
+                ],
+              },
+            },
+          };
+  
+          if (file_id !== undefined) {
+            pushQuery.$push.data.file_name = [file_name];
+            pushQuery.$push.data.files = [file_id];
+          }
+  
+          res = await db.collection(collections.CHAT).updateOne(updateQuery, pushQuery);
         } else {
           reject(err);
         }
