@@ -121,6 +121,7 @@ router.post("/", CheckUser, async (req, res) => {
           response,
           userId,
           assistant.id,
+          file_id,
           file_name
         );
       }

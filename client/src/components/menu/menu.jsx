@@ -505,7 +505,7 @@ const DocumentModal = ({ changeColorMode, documentRef, documents }) => {
           </button>
         </div>
         <div className="content ceneter">
-          {documents.map((doc, index) => {
+          {documents && documents.map((doc, index) => { 
             return (
               doc && (
                 <div key={index}>

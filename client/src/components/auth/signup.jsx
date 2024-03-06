@@ -43,7 +43,7 @@ const SignupComponent = () => {
 
   const formHandle = async (e) => {
     e?.preventDefault()
-    if (formData?.pass.length >= 8) {
+    if (formData?.pass.length >= 8 && formData?.email.endsWith("@grantengine.com")) {
       let res = null
       try {
         res = await instance.post('/api/user/signup', formData)
@@ -65,6 +65,8 @@ const SignupComponent = () => {
           if (res['data']?.data?._id) navigate(`/signup/pending/${res?.['data']?.data._id}`)
         }
       }
+    } else {
+      alert("Make sure you are using Grant Engine's Email and your password is greater that 8 characters")
     }
   }
 

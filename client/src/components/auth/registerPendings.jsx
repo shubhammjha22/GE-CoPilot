@@ -64,7 +64,7 @@ const RegisterPendings = ({ _id }) => {
         <button type='submit'>Continue</button>
 
         <div>
-          <p>By clicking "Continue", you agree to our <span>Terms</span>, <br /><span>Privacy policy</span> and confirm you're 18 years or older.</p>
+          <p>By clicking "Continue", you agree to our <span></span>, <br /><span>Privacy policy</span> and confirm you're 18 years or older.</p>
         </div>
       </form>
 

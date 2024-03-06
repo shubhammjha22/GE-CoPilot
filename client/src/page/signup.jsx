@@ -71,22 +71,7 @@ const Signup = () => {
             <SignupComponent />
 
             <div className="bottum">
-              <div className="start">
-                <a
-                  href="https://openai.com/policies/terms-of-use"
-                  target="_blank"
-                >
-                  Terms of use
-                </a>
-              </div>
-              <div className="end">
-                <a
-                  href="https://openai.com/policies/privacy-policy"
-                  target="_blank"
-                >
-                  Privacy Policy
-                </a>
-              </div>
+              
             </div>
           </>
         )}

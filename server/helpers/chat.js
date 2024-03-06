@@ -3,7 +3,7 @@ import collections from "../db/collections.js";
 import { ObjectId } from "mongodb";
 
 export default {
-  newResponse: (prompt, { openai }, userId, assistant_id,file_name) => {
+  newResponse: (prompt, { openai }, userId, assistant_id,file_id,file_name) => {
     return new Promise(async (resolve, reject) => {
       let chatId = new ObjectId().toHexString();
       let res = null;
@@ -18,7 +18,7 @@ export default {
             {
               chatId,
               assistant_id,
-              files: [],
+              files: [file_id],
               file_name:[file_name],
               chats: [
                 {
@@ -52,7 +52,8 @@ export default {
                   data: {
                     chatId,
                     assistant_id,
-                    file_name,
+                    files : [file_id],
+                    file_name:[file_name],
                     chats: [
                       {
                         role: "user",
@@ -91,6 +92,7 @@ export default {
     });
   },
   Response: (prompt, { openai }, userId, chatId, assistant_id,file_name) => {
+    console.log(file_name," ------------------------------------")
     return new Promise(async (resolve, reject) => {
       let res = null;
       try {
