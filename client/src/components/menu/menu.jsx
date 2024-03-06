@@ -39,6 +39,8 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
   console.log(file_id);
   let path = window.location.pathname;
   const user = useSelector((state) => state.user);
+  let current_chat = useSelector((state) => state.history);
+  current_chat = current_chat.filter((obj) => obj.active === true);
   const menuRef = useRef(null);
   const btnRef = useRef(null);
   const settingRef = useRef(null);
@@ -52,6 +54,26 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [firstName, setFirstName] = useState("Anonymous ");
   const [lastName, setlastName] = useState("User");
+  const [documents, setDocuments] = useState([]);
+
+  const getDocuments = async () => {
+    console.log("first");
+    console.log("From function", user._id, current_chat[0].chatId);
+    let res = null;
+    try {
+      res = await instance.post("/api/chat/getfile", {
+        userId: user._id,
+        chatId: current_chat[0].chatId,
+      });
+    } catch (err) {
+      console.log(err);
+    } finally {
+      if (res?.data) {
+        console.log(res.data);
+        setDocuments(res?.data?.data[0].file_name);
+      }
+    }
+  };
 
   const logOut = async () => {
     if (window.confirm("Do you want log out")) {
@@ -155,6 +177,7 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
       <DocumentModal
         changeColorMode={changeColorMode}
         documentRef={documentRef}
+        documents={documents}
       />
 
       <header>
@@ -242,6 +265,7 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
                 documentRef.current.classList.add("clicked");
                 documentRef.current.style.display = "flex";
               }
+              getDocuments();
             }}
           >
             <File />
@@ -454,16 +478,7 @@ const Modal = ({ changeColorMode, settingRef }) => {
   );
 };
 
-const DocumentModal = ({ changeColorMode, documentRef }) => {
-  const user = useSelector((state) => state);
-  const documents = [
-    "Shashank Docs",
-    "Shashank Docs",
-    "Shashank Docs",
-    "Shashank Docs",
-    "Shashank Docs",
-  ];
-  console.log(user);
+const DocumentModal = ({ changeColorMode, documentRef, documents }) => {
   return (
     <div
       className="settingsModal"
@@ -492,11 +507,13 @@ const DocumentModal = ({ changeColorMode, documentRef }) => {
         <div className="content ceneter">
           {documents.map((doc, index) => {
             return (
-              <div key={index}>
-                <p>
-                  {index}. {doc}
-                </p>
-              </div>
+              doc && (
+                <div key={index}>
+                  <p>
+                    {index}. {doc}
+                  </p>
+                </div>
+              )
             );
           })}
         </div>

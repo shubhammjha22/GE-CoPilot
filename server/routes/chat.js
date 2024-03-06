@@ -489,9 +489,9 @@ router.delete("/all", CheckUser, async (req, res) => {
 //Router for Attached Documnets Modal
 
 
-router.get("/getfile", async (req, res) => {
+router.post("/getfile", async (req, res) => {
   const { userId, chatId } = req.body;
-
+  console.log("here", userId, chatId)
   let response = null;
 
   try {
@@ -503,6 +503,7 @@ router.get("/getfile", async (req, res) => {
     });
   } finally {
     if (response) {
+      console.log(response)
       res.status(200).json({
         status: 200,
         message: "Success",

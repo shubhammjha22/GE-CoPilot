@@ -309,13 +309,14 @@ export default {
   },
   //Get all file name
   getFiles: (userId, chatId) => {
+    console.log(userId, chatId)
     return new Promise(async (resolve, reject) => {
       let res = await db
         .collection(collections.CHAT)
         .aggregate([
           {
             $match: {
-              user: userId.toString(),
+              user: userId,
             },
           },
           {
@@ -339,6 +340,7 @@ export default {
         });
 
       if (Array.isArray(res)) {
+        console.log(res)
         resolve(res);
       } else {
         reject({ text: "DB Getting Some Error" });
