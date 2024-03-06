@@ -10,6 +10,7 @@ import {
   Tick,
   Trash,
   Xicon,
+  File,
 } from "../../assets/";
 import Profile from "../../assets/Profile";
 import { emptyUser } from "../../redux/user";
@@ -20,7 +21,6 @@ import ReactS3 from "react-s3";
 import instance from "../../config/instance";
 import "./style.scss";
 import { Buffer } from "buffer";
-import File from "../../assets/file";
 window.Buffer = Buffer;
 
 const S3_BUCKET = "grant-copilot";

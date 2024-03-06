@@ -78,7 +78,7 @@ router.post("/", CheckUser, async (req, res) => {
         instructions:
           "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
         tools: [{ type: "retrieval" },{ type: "code_interpreter" }],
-        model: "gpt-3.5-turbo",
+        model: "gpt-4-0125-preview",
         file_ids: [file_id],
       });
       const thread = await client.beta.threads.create({
@@ -242,7 +242,7 @@ router.put("/", CheckUser, async (req, res) => {
       instructions:
         "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
       tools: [{ type: "retrieval" },{ type: "code_interpreter" }],
-      model: "gpt-3.5-turbo",
+      model: "gpt-4-0125-preview",
       file_ids: final_chat.files,
     });
     console.log(assistant);
@@ -280,7 +280,7 @@ router.put("/", CheckUser, async (req, res) => {
       instructions:
         "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
       tools: [{ type: "retrieval" },{ type: "code_interpreter" }],
-      model: "gpt-3.5-turbo",
+      model: "gpt-4-0125-preview",
       file_ids: final_chat.files,
     });
     console.log(assistant);
