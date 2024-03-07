@@ -120,19 +120,30 @@ export default Main;
 //Input Area
 const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
   let textAreaRef = useRef();
-  const [files, setFiles] = useState("");
   const navigate = useNavigate();
-  const [file_name, set_file_name] = useState(null);
   const dispatch = useDispatch();
   // const [assistant_id, set_assistant_id] = useState(null);
-
+  const [documents, setDocuments] = useState([]);
   const { prompt, content, _id } = useSelector((state) => state.messages);
-
-  useEffect(() => {
-    if (files) {
-      handleChange();
+  console.log(_id);
+  const getFiles = async () => {
+    let res = null;
+    if (!_id) return console.log("No chat id");
+    else {
+      try {
+        res = await instance.get("/api/chat/upload?chatId=" + _id);
+      } catch (err) {
+        console.log(err);
+      } finally {
+        if (res?.data) {
+          setDocuments(res?.data?.data);
+        }
+      }
     }
-  });
+  };
+  useEffect(() => {
+    getFiles();
+  }, [_id]);
   useEffect(() => {
     textAreaRef.current?.addEventListener("input", (e) => {
       textAreaRef.current.style.height = "auto";
@@ -140,25 +151,39 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
         textAreaRef.current.scrollHeight + "px";
     });
   });
-  const handleChange = async () => {
+  const handleFileUpload = async (e) => {
+    let response = null;
     try {
-      const client = new OpenAI({
-        apiKey: "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",
-        dangerouslyAllowBrowser: true,
+      const file = e.target.files[0];
+      console.log(file);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("chatId", _id);
+      response = await instance.post("/api/chat/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
-      console.log(files);
-      const file_n = await client.files.create({
-        purpose: "assistants",
-        file: files,
-      });
-      console.log(file_n.id);
-      alert(`File successfully uploaded! You can now chat with: ${files.name}`);
-      set_file_name(files.name)
-      set_file_id(file_n.id);
-      // set_assistant_id(assistant.id)
-      setFiles("");
+      console.log(response.data);
+
+      // const client = new OpenAI({
+      //   apiKey: "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",
+      //   dangerouslyAllowBrowser: true,
+      // });
+      // console.log(files);
+      // const file_n = await client.files.create({
+      //   purpose: "assistants",
+      //   file: files,
+      // });
+      // console.log(file_n.id);
     } catch (error) {
       console.log(error);
+    } finally {
+      dispatch(insertNew({ _id: response.data.data.chatId }));
+      console.log(response?.data.data.chatId);
+      navigate(`/chat/${response.data.data.chatId}`);
+      alert("File uploaded successfully");
+      getFiles();
     }
   };
   const FormHandle = async () => {
@@ -180,7 +205,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
             chatId: _id,
             prompt,
             file_id,
-            file_name
+            // file_name,
             // assistant_id,
           });
           console.log("PUT", res.data);
@@ -189,10 +214,12 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
           res = await instance.post("/api/chat", {
             prompt,
             file_id,
-            file_name
+            chatId: _id,
+            // file_name,
             // assistant_id
           });
           console.log("POST", res.data);
+          navigate(`/chat/${res?.data?.data?._id}`);
         }
       } catch (err) {
         console.log(err.response.data);
@@ -205,7 +232,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
         }
       } finally {
         if (res?.data) {
-          set_file_id(null)
+          set_file_id(null);
           const { _id, content } = res?.data?.data;
           console.log(_id, content);
           dispatch(insertNew({ _id, fullContent: content, chatsId }));
@@ -261,72 +288,84 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
               </>
             )}
           </div>
-
-          <div className="flexBody">
-            <div className="upload-file" style={{ cursor: "pointer" }}>
-              <label htmlFor="fileInput">
-                <input
-                  type="file"
-                  id="fileInput"
-                  accept="application/pdf,text/plain,text/csv"
-                  style={{ display: "none", cursor: "pointer" }}
-                  onChange={(e) => setFiles(e.target.files[0])}
-                />
-                <Upload />
-              </label>
+          <div className="files-div">
+            <div className="files">
+              {documents.length > 0 &&
+                documents?.map((doc, index) => {
+                  return (
+                    <div key={index} className="file">
+                      <p>{doc}</p>
+                    </div>
+                  );
+                })}
             </div>
-            <div className="box">
-              <textarea
-                ref={textAreaRef}
-                value={prompt}
-                onChange={(e) => {
-                  dispatch(livePrompt(e.target.value));
-                }}
-              />
-              {!status?.loading ? (
-                <button
-                  onClick={() => {
-                    console.log(textAreaRef.current.value);
-                    textAreaRef.current.value = "";
-                    FormHandle();
+
+            <div className="flexBody">
+              <div className="upload-file" style={{ cursor: "pointer" }}>
+                <label htmlFor="fileInput">
+                  <input
+                    type="file"
+                    id="fileInput"
+                    accept="application/pdf,text/plain,text/csv"
+                    style={{ display: "none", cursor: "pointer" }}
+                    onChange={handleFileUpload}
+                  />
+                  <Upload />
+                </label>
+              </div>
+              <div className="box">
+                <textarea
+                  ref={textAreaRef}
+                  value={prompt}
+                  onChange={(e) => {
+                    dispatch(livePrompt(e.target.value));
                   }}
-                >
-                  {<Rocket />}
-                </button>
-              ) : (
-                <div className="loading">
-                  <div className="dot" />
-                  <div className="dot-2 dot" />
-                  <div className="dot-3 dot" />
-                </div>
-              )}
-            </div>
-
-            {status.chat && content?.length > 0 && status.actionBtns && (
-              <>
-                {!status?.resume ? (
-                  <div className="chatActionsMd">
-                    <button
-                      onClick={() => {
-                        chatRef.current.loadResponse(stateAction);
-                      }}
-                    >
-                      <Reload />
-                    </button>
-                  </div>
+                />
+                {!status?.loading ? (
+                  <button
+                    onClick={() => {
+                      console.log(textAreaRef.current.value);
+                      textAreaRef.current.value = "";
+                      FormHandle();
+                    }}
+                  >
+                    {<Rocket />}
+                  </button>
                 ) : (
-                  <div className="chatActionsMd">
-                    <button
-                      onClick={() => {
-                        chatRef.current.stopResponse(stateAction);
-                      }}
-                    >
-                      <Stop />
-                    </button>
+                  <div className="loading">
+                    <div className="dot" />
+                    <div className="dot-2 dot" />
+                    <div className="dot-3 dot" />
                   </div>
                 )}
-              </>
-            )}
+              </div>
+
+              {status.chat && content?.length > 0 && status.actionBtns && (
+                <>
+                  {!status?.resume ? (
+                    <div className="chatActionsMd">
+                      <button
+                        onClick={() => {
+                          chatRef.current.loadResponse(stateAction);
+                        }}
+                      >
+                        <Reload />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="chatActionsMd">
+                      <button
+                        onClick={() => {
+                          chatRef.current.stopResponse(stateAction);
+                        }}
+                      >
+                        <Stop />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </>
       ) : (

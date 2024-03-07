@@ -259,7 +259,7 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
         </div>
 
         <div className="actions">
-          <button
+          {/* <button
             onClick={() => {
               if (documentRef?.current) {
                 documentRef.current.classList.add("clicked");
@@ -270,7 +270,7 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
           >
             <File />
             Attached Documents
-          </button>
+          </button> */}
           {history?.length > 0 && (
             <>
               {confirm ? (

@@ -23,9 +23,9 @@ app.use('/api/chat/', ChatRoute)
 app.use('/api/user/', UserRoute)
 
 // front end react route
-app.get('/*',(req,res)=>{
-    res.sendFile(path.join(`${path.resolve(path.dirname(''))}/dist/index.html`))
-})
+// app.get('/*',(req,res)=>{
+//     res.sendFile(path.join(`${path.resolve(path.dirname(''))}/dist/index.html`))
+// })
 
 connectDB((err) => {
     if (err) return console.log("MongoDB Connect Failed : ", err)

@@ -3,13 +3,16 @@ import dotnet from "dotenv";
 import user from "../helpers/user.js";
 import jwt from "jsonwebtoken";
 import chat from "../helpers/chat.js";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import { db } from "../db/connection.js";
 import collections from "../db/collections.js";
-
+import multer from "multer";
+import fs from "fs";
+import { ObjectId } from "mongodb";
 dotnet.config();
 
 let router = Router();
+const upload = multer({ dest: "uploads/" });
 
 const CheckUser = async (req, res, next) => {
   jwt.verify(
@@ -58,110 +61,174 @@ router.get("/", (req, res) => {
   res.send("Welcome to chatGPT api v1");
 });
 
+router.get("/upload", CheckUser, async (req, res) => {
+  const { userId } = req.body;
+  const { chatId } = req.query;
+  console.log(chatId, userId);
+  let chat = await db.collection(collections.CHAT).findOne({
+    user: userId.toString(),
+    "data.chatId": chatId,
+  });
+  if (chat) {
+    chat = chat.data.filter((obj) => {
+      return obj.chatId === chatId;
+    });
+    chat = chat[0];
+    res.status(200).json({
+      status: 200,
+      message: "Success",
+      data: chat.file_name,
+    });
+  } else {
+    res.status(404).json({
+      status: 404,
+      message: "Not found",
+    });
+  }
+});
+
+router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
+  // take file object from frontend upload to openai and store id and file name to mongo db
+  const { userId, chatId } = req.body;
+  console.log(req.file);
+  const file = fs.createReadStream(req ? req.file.path : null);
+  let response = null;
+  try {
+    response = await client.files.create({
+      purpose: "assistants",
+      file: file,
+    });
+    console.log(response);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      status: 500,
+      message: err,
+    });
+    return; // Exit early in case of an error
+  }
+
+  let file_id = null;
+  let file_name = null;
+
+  if (response) {
+    file_id = response.id;
+    file_name = req.file.originalname;
+
+    let chatIdToSend = null; // Variable to store the chatId to send in the response
+
+    const chat = await db.collection(collections.CHAT).findOne({
+      user: userId.toString(),
+      "data.chatId": chatId,
+    });
+    let all_files = [];
+    if (chat?.files?.length > 0) {
+      all_files = chat?.files?.push(file_id);
+    } else {
+      all_files = [file_id];
+    }
+    const assistant = await client.beta.assistants.create({
+      name: "GE CoPilot",
+      instructions:
+        "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+      tools: [{ type: "retrieval" }, { type: "code_interpreter" }],
+      model: "gpt-4-0125-preview",
+      file_ids: all_files,
+    });
+    console.log(assistant);
+    if (chat) {
+      chatIdToSend = chatId; // Use existing chatId
+      await db.collection(collections.CHAT).updateOne(
+        {
+          user: userId.toString(),
+          "data.chatId": chatId,
+        },
+        {
+          $push: {
+            "data.$.files": file_id,
+            "data.$.file_name": file_name,
+          },
+          $set: {
+            "data.$.assistant_id": assistant.id,
+          },
+        }
+      );
+    } else {
+      const newChatId = new ObjectId().toHexString();
+      chatIdToSend = newChatId; // Use newly generated chatId
+      await db.collection(collections.CHAT).updateOne(
+        {
+          user: userId.toString(),
+        },
+        {
+          $push: {
+            data: {
+              chatId: newChatId,
+              files: [file_id],
+              file_name: [file_name],
+              chats: [],
+              chat: [],
+              assistant_id: assistant.id,
+            },
+          },
+        }
+      );
+    }
+
+    res.status(200).json({
+      status: 200,
+      message: "Success",
+      data: {
+        file_id,
+        file_name,
+        chatId: chatIdToSend, // Send the correct chatId in the response
+      },
+    });
+  }
+});
+
 router.post("/", CheckUser, async (req, res) => {
-  const { prompt, file_id, userId,file_name } = req.body;
-  const messages = [
-    {
-      role: "assistant",
-      content: prompt,
-    },
-  ];
-  console.log(req.body);
+  const { prompt, userId, chatId } = req.body;
   let response = {};
   try {
     // Creating Assistant on OpenAI and giving it file_id
+    const chat_find = await db.collection(collections.CHAT).findOne({
+      user: userId.toString(),
+      "data.chatId": chatId,
+    });
+    console.log(chat_find);
     console.log("POST is being called", req.body);
-    if (file_id) {
-      console.log("Assistant running");
-      const assistant = await client.beta.assistants.create({
-        name: "GE CoPilot",
-        instructions:
-          "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
-        tools: [{ type: "retrieval" },{ type: "code_interpreter" }],
-        model: "gpt-4-0125-preview",
-        file_ids: [file_id],
-      });
-      const thread = await client.beta.threads.create({
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      });
-      const run = await client.beta.threads.runs.create(thread.id, {
-        assistant_id: assistant.id,
-      });
-      let final_run = "";
-      while (final_run.status !== "completed") {
-        final_run = await client.beta.threads.runs.retrieve(thread.id, run.id);
-      }
-      console.log(final_run.status);
-      const messages = await client.beta.threads.messages.list(thread.id);
-      console.log(messages.data[0].content[0].text.value);
-      response = { openai: messages.data[0].content[0].text.value };
-      console.log(response.openai);
-      if (response.openai) {
-        let index = 0;
-        for (let c of response["openai"]) {
-          if (index <= 1) {
-            if (c == "\n") {
-              response.openai = response.openai.slice(
-                1,
-                response.openai.length
-              );
-            }
-          } else {
-            break;
+    // If no file_id is given
+    response.openai = await openai.chat.completions.create({
+      model: "gpt-4-0125-preview",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a helpful and that answers what is asked. Dont show the mathematical steps if not asked.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      top_p: 0.5,
+    });
+    if (response.openai.choices[0].message) {
+      response.openai = response.openai.choices[0].message.content;
+      let index = 0;
+      console.log(response);
+      for (let c of response["openai"]) {
+        if (index <= 1) {
+          if (c == "\n") {
+            response.openai = response.openai.slice(1, response.openai.length);
           }
-          index++;
+        } else {
+          break;
         }
-        response.db = await chat.newResponse(
-          prompt,
-          response,
-          userId,
-          assistant.id,
-          file_id,
-          file_name
-        );
+        index++;
       }
-    } else {
-      // If no file_id is given
-      response.openai = await openai.chat.completions.create({
-        model: "gpt-4-0125-preview",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a helpful and that answers what is asked. Dont show the mathematical steps if not asked.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        top_p: 0.5,
-      });
-      if (response.openai.choices[0].message) {
-        response.openai = response.openai.choices[0].message.content;
-        let index = 0;
-        console.log(response);
-        for (let c of response["openai"]) {
-          if (index <= 1) {
-            if (c == "\n") {
-              response.openai = response.openai.slice(
-                1,
-                response.openai.length
-              );
-            }
-          } else {
-            break;
-          }
-          index++;
-        }
-        response.db = await chat.newResponse(prompt, response, userId);
-        //console.log(response.db)
-      }
+      response.db = await chat.newResponse(prompt, response, userId);
     }
   } catch (err) {
     console.log(err);
@@ -185,8 +252,9 @@ router.post("/", CheckUser, async (req, res) => {
 });
 
 router.put("/", CheckUser, async (req, res) => {
-  const { prompt, userId, chatId, file_id,file_name } = req.body;
-  console.log("PUT is being called",req.body, file_id)
+  const { prompt, userId, chatId } = req.body;
+  console.log("PUT is being called", req.body);
+  console.log(userId);
   let mes = {
     role: "system",
     content:
@@ -205,8 +273,6 @@ router.put("/", CheckUser, async (req, res) => {
     },
   ];
   let response = {};
-  let assistant_id = "";
-  console.log(file_id);
   let new_chat = await db.collection(collections.CHAT).findOne({
     user: userId.toString(),
     data: { $elemMatch: { chatId: chatId } },
@@ -215,80 +281,8 @@ router.put("/", CheckUser, async (req, res) => {
     return obj.chatId === chatId;
   });
   new_chat = new_chat[0];
-  console.log("new chat", new_chat, file_id);
-  if (!new_chat.assistant_id && file_id) {
-    await db.collection(collections.CHAT).updateOne(
-      {
-        user: userId.toString(),
-        "data.chatId": chatId,
-      },
-      {
-        $push: {
-          "data.$.files": file_id,
-        },
-      }
-    );
-    const updated_data = await db.collection(collections.CHAT).findOne({
-      user: userId.toString(),
-      "data.chatId": chatId,
-    });
-    console.log("ok waiting for update: ", updated_data.data);
-    const final_chat = updated_data.data.filter((chat) => {
-      return chat.chatId === chatId;
-    })[0];
-    console.log("Final Chat", final_chat);
-    const assistant = await client.beta.assistants.create({
-      name: "GE CoPilot",
-      instructions:
-        "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
-      tools: [{ type: "retrieval" },{ type: "code_interpreter" }],
-      model: "gpt-4-0125-preview",
-      file_ids: final_chat.files,
-    });
-    console.log(assistant);
-    assistant_id = assistant.id;
-  } else if (new_chat.assistant_id && file_id) {
-    console.log("assistant and file wjhebskejdnalkewda")
-    await db
-      .collection(collections.CHAT)
-      .findOneAndUpdate(
-        {
-          user: userId.toString(),
-          "data.chatId": chatId,
-        },
-        {
-          $push: {
-            "data.$.files": file_id,
-          },
-        }
-      );
-      const updated_chat = await db
-      .collection(collections.CHAT)
-      .findOne(
-        {
-          user: userId.toString(),
-          "data.chatId": chatId,
-        }
-      );
-    const final_chat = updated_chat.data.filter((chat) => {
-      return chat.chatId === chatId;
-    })[0];
-    console.log("Final CHat: ", final_chat);
-    console.log("Assistant Id: ", final_chat.assistant_id);
-    const assistant = await client.beta.assistants.create({
-      name: "GE CoPilot",
-      instructions:
-        "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
-      tools: [{ type: "retrieval" },{ type: "code_interpreter" }],
-      model: "gpt-4-0125-preview",
-      file_ids: final_chat.files,
-    });
-    console.log(assistant);
-    assistant_id = assistant.id;
-  } else {
-    assistant_id = new_chat.assistant_id;
-  }
-  console.log("first: ", assistant_id);
+  console.log("new chat", new_chat);
+  const assistant_id = new_chat.assistant_id;
   try {
     if (assistant_id) {
       console.log("Assistant running");
@@ -336,8 +330,7 @@ router.put("/", CheckUser, async (req, res) => {
           response,
           userId,
           chatId,
-          assistant_id,
-          file_name
+          assistant_id
         );
       }
     } else {
@@ -384,8 +377,7 @@ router.put("/", CheckUser, async (req, res) => {
           response,
           userId,
           chatId,
-          assistant_id,
-          file_name
+          assistant_id
         );
       }
     }
@@ -489,14 +481,13 @@ router.delete("/all", CheckUser, async (req, res) => {
 
 //Router for Attached Documnets Modal
 
-
 router.post("/getfile", async (req, res) => {
   const { userId, chatId } = req.body;
-  console.log("here", userId, chatId)
+  console.log("here", userId, chatId);
   let response = null;
 
   try {
-    response = await chat.getFiles(userId,chatId);
+    response = await chat.getFiles(userId, chatId);
   } catch (err) {
     res.status(500).json({
       status: 500,
@@ -504,7 +495,7 @@ router.post("/getfile", async (req, res) => {
     });
   } finally {
     if (response) {
-      console.log(response)
+      console.log(response);
       res.status(200).json({
         status: 200,
         message: "Success",
