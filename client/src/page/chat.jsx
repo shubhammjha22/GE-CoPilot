@@ -42,15 +42,10 @@ const reducer = (state, { type, status }) => {
 
 const Main = ({ file_id, set_file_id }) => {
   let location = useLocation();
-
   const navigate = useNavigate();
-
   const dispatch = useDispatch();
-
   const chatRef = useRef();
-
   const { user } = useSelector((state) => state);
-
   const { id = null } = useParams();
 
   const [status, stateAction] = useReducer(reducer, {
@@ -136,6 +131,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
         console.log(err);
       } finally {
         if (res?.data) {
+          console.log(res.data)
           setDocuments(res?.data?.data);
         }
       }
@@ -290,7 +286,7 @@ const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
           </div>
           <div className="files-div">
             <div className="files">
-              {documents.length > 0 &&
+              {documents?.length > 0 &&
                 documents?.map((doc, index) => {
                   return (
                     <div key={index} className="file">

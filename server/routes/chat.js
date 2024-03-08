@@ -107,7 +107,7 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
     });
     return; // Exit early in case of an error
   }
-
+  // delete the file from the uploads folder after uploading to openai
   let file_id = null;
   let file_name = null;
 
@@ -171,6 +171,10 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
               assistant_id: assistant.id,
             },
           },
+        }, 
+        {
+          new: true,
+          upsert: true,
         }
       );
     }
@@ -188,15 +192,9 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
 });
 
 router.post("/", CheckUser, async (req, res) => {
-  const { prompt, userId, chatId } = req.body;
+  const { prompt, userId } = req.body;
   let response = {};
   try {
-    // Creating Assistant on OpenAI and giving it file_id
-    const chat_find = await db.collection(collections.CHAT).findOne({
-      user: userId.toString(),
-      "data.chatId": chatId,
-    });
-    console.log(chat_find);
     console.log("POST is being called", req.body);
     // If no file_id is given
     response.openai = await openai.chat.completions.create({

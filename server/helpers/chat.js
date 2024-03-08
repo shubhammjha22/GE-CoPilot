@@ -3,16 +3,16 @@ import collections from "../db/collections.js";
 import { ObjectId } from "mongodb";
 
 export default {
-  newResponse: (prompt, { openai }, userId, assistant_id, file_id, file_name) => {
-    console.log(file_id, file_name)
+  newResponse: (prompt, { openai }, userId) => {
     return new Promise(async (resolve, reject) => {
       let chatId = new ObjectId().toHexString();
       let res = null;
       try {
-        await db.collection(collections.CHAT).createIndex({ user: 1 }, { unique: true });
+        await db
+          .collection(collections.CHAT)
+          .createIndex({ user: 1 }, { unique: true });
         let dataObj = {
           chatId,
-          assistant_id,
           chats: [
             {
               role: "user",
@@ -30,12 +30,7 @@ export default {
             },
           ],
         };
-  
-        if (file_id !== undefined) {
-          dataObj.files = [file_id];
-          dataObj.file_name = [file_name];
-        }
-  
+
         res = await db.collection(collections.CHAT).insertOne({
           user: userId.toString(),
           data: [dataObj],
@@ -49,7 +44,6 @@ export default {
             $push: {
               data: {
                 chatId,
-                assistant_id,
                 chats: [
                   {
                     role: "user",
@@ -69,13 +63,10 @@ export default {
               },
             },
           };
-  
-          if (file_id !== undefined) {
-            pushQuery.$push.data.file_name = [file_name];
-            pushQuery.$push.data.files = [file_id];
-          }
-  
-          res = await db.collection(collections.CHAT).updateOne(updateQuery, pushQuery);
+
+          res = await db
+            .collection(collections.CHAT)
+            .updateOne(updateQuery, pushQuery);
         } else {
           reject(err);
         }
@@ -90,8 +81,8 @@ export default {
       }
     });
   },
-  Response: (prompt, { openai }, userId, chatId, assistant_id,file_name) => {
-    console.log(file_name," ------------------------------------")
+  Response: (prompt, { openai }, userId, chatId, assistant_id, file_name) => {
+    console.log(file_name, " ------------------------------------");
     return new Promise(async (resolve, reject) => {
       let res = null;
       try {
@@ -109,12 +100,12 @@ export default {
             },
           },
         };
-         // If file_name is not empty and not already present in the array, push it
+        // If file_name is not empty and not already present in the array, push it
         if (file_name && file_name.trim() !== "") {
           updateObj.$addToSet = {
-              "data.$.file_name": file_name
+            "data.$.file_name": file_name,
           };
-      }
+        }
         // If assistant_id is null, set it to the incoming assistant_id
         if (assistant_id !== null) {
           updateObj.$set = {
@@ -310,7 +301,7 @@ export default {
   },
   //Get all file name
   getFiles: (userId, chatId) => {
-    console.log(userId, chatId)
+    console.log(userId, chatId);
     return new Promise(async (resolve, reject) => {
       let res = await db
         .collection(collections.CHAT)
@@ -341,13 +332,11 @@ export default {
         });
 
       if (Array.isArray(res)) {
-        console.log(res)
+        console.log(res);
         resolve(res);
       } else {
         reject({ text: "DB Getting Some Error" });
       }
     });
   },
-
 };
-
