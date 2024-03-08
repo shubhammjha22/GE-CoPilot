@@ -153,34 +153,36 @@ const InputArea = ({
     try {
       const file = e.target.files[0];
       console.log(file);
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("chatId", _id);
-      response = await instance.post("/api/chat/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      console.log(response.data);
-
-      // const client = new OpenAI({
-      //   apiKey: "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",
-      //   dangerouslyAllowBrowser: true,
-      // });
-      // console.log(files);
-      // const file_n = await client.files.create({
-      //   purpose: "assistants",
-      //   file: files,
-      // });
-      // console.log(file_n.id);
+      if (
+        file.name.endsWith(".pdf") ||
+        file.name.endsWith(".txt") ||
+        file.name.endsWith(".csv") ||
+        file.name.endsWith(".docx")
+      ) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("chatId", _id);
+        response = await instance.post("/api/chat/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        console.log(response.data);
+      } else {
+        alert("File type not supported");
+      }
     } catch (error) {
       console.log(error);
     } finally {
-      dispatch(insertNew({ _id: response.data.data.chatId }));
-      console.log(response?.data.data.chatId);
-      navigate(`/chat/${response.data.data.chatId}`);
-      alert("File uploaded successfully");
-      getFiles();
+      if (response?.data?.data?.chatId) {
+        dispatch(insertNew({ _id: response?.data?.data?.chatId }));
+        console.log(response?.data?.data?.chatId);
+        navigate(`/chat/${response?.data?.data?.chatId}`);
+        alert("File uploaded successfully");
+        getFiles();
+      } else {
+        alert("File upload failed due to unsupported file type");
+      }
     }
   };
   const FormHandle = async () => {
