@@ -22,6 +22,8 @@ import instance from "../../config/instance";
 import "./style.scss";
 import { Buffer } from "buffer";
 window.Buffer = Buffer;
+import { useContext } from "react";
+import { documentsContext } from "./../../App";
 
 const S3_BUCKET = "grant-copilot";
 const REGION = "us-east-1";
@@ -35,8 +37,7 @@ const config = {
   secretAccessKey: SECRET_ACCESS_KEY,
 };
 
-const Menu = ({ changeColorMode, file_id, set_file_id }) => {
-  console.log(file_id);
+const Menu = ({ changeColorMode }) => {
   let path = window.location.pathname;
   const user = useSelector((state) => state.user);
   let current_chat = useSelector((state) => state.history);
@@ -54,26 +55,7 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [firstName, setFirstName] = useState("Anonymous ");
   const [lastName, setlastName] = useState("User");
-  const [documents, setDocuments] = useState([]);
-
-  const getDocuments = async () => {
-    console.log("first");
-    console.log("From function", user._id, current_chat[0].chatId);
-    let res = null;
-    try {
-      res = await instance.post("/api/chat/getfile", {
-        userId: user._id,
-        chatId: current_chat[0].chatId,
-      });
-    } catch (err) {
-      console.log(err);
-    } finally {
-      if (res?.data) {
-        console.log(res.data);
-        setDocuments(res?.data?.data[0].file_name);
-      }
-    }
-  };
+  const { documents, setDocuments } = useContext(documentsContext);
 
   const logOut = async () => {
     if (window.confirm("Do you want log out")) {
@@ -217,7 +199,7 @@ const Menu = ({ changeColorMode, file_id, set_file_id }) => {
               } else {
                 navigate("/chat");
               }
-              set_file_id(null);
+              setDocuments([]);
             }}
           >
             <Plus />
@@ -505,17 +487,18 @@ const DocumentModal = ({ changeColorMode, documentRef, documents }) => {
           </button>
         </div>
         <div className="content ceneter">
-          {documents && documents.map((doc, index) => { 
-            return (
-              doc && (
-                <div key={index}>
-                  <p>
-                    {index}. {doc}
-                  </p>
-                </div>
-              )
-            );
-          })}
+          {documents &&
+            documents.map((doc, index) => {
+              return (
+                doc && (
+                  <div key={index}>
+                    <p>
+                      {index}. {doc}
+                    </p>
+                  </div>
+                )
+              );
+            })}
         </div>
       </div>
     </div>

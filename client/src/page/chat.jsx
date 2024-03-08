@@ -6,7 +6,8 @@ import { setLoading } from "../redux/loading";
 import { useDispatch, useSelector } from "react-redux";
 import { addList, emptyAllRes, insertNew, livePrompt } from "../redux/messages";
 import { emptyUser } from "../redux/user";
-import OpenAI from "openai";
+import { useContext } from "react";
+import { documentsContext } from "./../App";
 import instance from "../config/instance";
 import Upload from "./../assets/upload";
 import "./style.scss";
@@ -47,12 +48,17 @@ const Main = ({ file_id, set_file_id }) => {
   const chatRef = useRef();
   const { user } = useSelector((state) => state);
   const { id = null } = useParams();
-
+  const { _id } = useSelector((state) => state.messages);
+  const { documents, setDocuments, getFiles } = useContext(documentsContext);
   const [status, stateAction] = useReducer(reducer, {
     chat: false,
     error: false,
     actionBtns: false,
   });
+
+  useEffect(() => {
+    getFiles();
+  }, [_id]);
 
   useEffect(() => {
     if (user) {
@@ -105,6 +111,8 @@ const Main = ({ file_id, set_file_id }) => {
         stateAction={stateAction}
         file_id={file_id}
         set_file_id={set_file_id}
+        getFiles={getFiles}
+        documents={documents}
       />
     </div>
   );
@@ -113,30 +121,23 @@ const Main = ({ file_id, set_file_id }) => {
 export default Main;
 
 //Input Area
-const InputArea = ({ status, chatRef, stateAction, file_id, set_file_id }) => {
+const InputArea = ({
+  status,
+  chatRef,
+  stateAction,
+  file_id,
+  set_file_id,
+  getFiles,
+  documents,
+}) => {
   let textAreaRef = useRef();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   // const [assistant_id, set_assistant_id] = useState(null);
-  const [documents, setDocuments] = useState([]);
+  // const [documents, setDocuments] = useState([]);
   const { prompt, content, _id } = useSelector((state) => state.messages);
   console.log(_id);
-  const getFiles = async () => {
-    let res = null;
-    if (!_id) return console.log("No chat id");
-    else {
-      try {
-        res = await instance.get("/api/chat/upload?chatId=" + _id);
-      } catch (err) {
-        console.log(err);
-      } finally {
-        if (res?.data) {
-          console.log(res.data)
-          setDocuments(res?.data?.data);
-        }
-      }
-    }
-  };
+
   useEffect(() => {
     getFiles();
   }, [_id]);
