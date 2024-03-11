@@ -133,9 +133,8 @@ const InputArea = ({
   let textAreaRef = useRef();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  // const [assistant_id, set_assistant_id] = useState(null);
-  // const [documents, setDocuments] = useState([]);
-  const { prompt, content, _id } = useSelector((state) => state.messages);
+  const [last_prompt, set_last_prompt] = useState(null)
+  let { prompt, content, _id } = useSelector((state) => state.messages);
   console.log(_id);
 
   useEffect(() => {
@@ -186,6 +185,7 @@ const InputArea = ({
     }
   };
   const FormHandle = async () => {
+    prompt = last_prompt
     if (prompt?.length > 0) {
       chatRef?.current?.clearResponse();
       stateAction({ type: "chat", status: true });
@@ -204,8 +204,6 @@ const InputArea = ({
             chatId: _id,
             prompt,
             file_id,
-            // file_name,
-            // assistant_id,
           });
           console.log("PUT", res.data);
         } else {
@@ -214,8 +212,6 @@ const InputArea = ({
             prompt,
             file_id,
             chatId: _id,
-            // file_name,
-            // assistant_id
           });
           console.log("POST", res.data);
           navigate(`/chat/${res?.data?.data?._id}`);
@@ -270,7 +266,8 @@ const InputArea = ({
                 {!status?.resume ? (
                   <button
                     onClick={() => {
-                      chatRef.current.loadResponse(stateAction);
+                      // chatRef.current.loadResponse(stateAction);
+                      FormHandle();
                     }}
                   >
                     <Reload /> Regenerate response
@@ -317,6 +314,7 @@ const InputArea = ({
                   ref={textAreaRef}
                   value={prompt}
                   onChange={(e) => {
+                    set_last_prompt(e.target.value);
                     dispatch(livePrompt(e.target.value));
                   }}
                 />
