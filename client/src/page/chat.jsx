@@ -49,7 +49,7 @@ const Main = ({ file_id, set_file_id }) => {
   const { user } = useSelector((state) => state);
   const { id = null } = useParams();
   const { _id } = useSelector((state) => state.messages);
-  const { documents, setDocuments, getFiles } = useContext(documentsContext);
+  const { documents, getFiles } = useContext(documentsContext);
   const [status, stateAction] = useReducer(reducer, {
     chat: false,
     error: false,
@@ -133,7 +133,7 @@ const InputArea = ({
   let textAreaRef = useRef();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [last_prompt, set_last_prompt] = useState(null)
+  const [last_prompt, set_last_prompt] = useState(null);
   let { prompt, content, _id } = useSelector((state) => state.messages);
   console.log(_id);
 
@@ -180,12 +180,12 @@ const InputArea = ({
         alert("File uploaded successfully");
         getFiles();
       } else {
-        alert("File upload failed due to unsupported file type");
+        alert(`File upload failed due to unsupported file type`);
       }
     }
   };
   const FormHandle = async () => {
-    prompt = last_prompt
+    prompt = last_prompt;
     if (prompt?.length > 0) {
       chatRef?.current?.clearResponse();
       stateAction({ type: "chat", status: true });
@@ -285,17 +285,6 @@ const InputArea = ({
             )}
           </div>
           <div className="files-div">
-            <div className="files">
-              {documents?.length > 0 &&
-                documents?.map((doc, index) => {
-                  return (
-                    <div key={index} className="file">
-                      <p>{doc}</p>
-                    </div>
-                  );
-                })}
-            </div>
-
             <div className="flexBody">
               <div className="upload-file" style={{ cursor: "pointer" }}>
                 <label htmlFor="fileInput">
@@ -310,6 +299,16 @@ const InputArea = ({
                 </label>
               </div>
               <div className="box">
+                <div className="files">
+                  {documents?.length > 0 &&
+                    documents?.map((doc, index) => {
+                      return (
+                        <div key={index} className="file">
+                          <p className="file-name">{doc}</p>
+                        </div>
+                      );
+                    })}
+                </div>
                 <textarea
                   ref={textAreaRef}
                   value={prompt}

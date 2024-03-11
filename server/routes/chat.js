@@ -117,13 +117,33 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
 
     let chatIdToSend = null; // Variable to store the chatId to send in the response
 
-    const chat = await db.collection(collections.CHAT).findOne({
-      user: userId.toString(),
-      "data.chatId": chatId,
-    });
+    const chat = await db
+      .collection(collections.CHAT)
+      .aggregate([
+        {
+          $match: {
+            user: userId.toString(),
+          },
+        },
+        {
+          $unwind: "$data",
+        },
+        {
+          $match: {
+            "data.chatId": chatId,
+          },
+        },
+        {
+          $project: {
+            files: "$data.files",
+          },
+        },
+      ])
+      .toArray();
     let all_files = [];
-    if (chat?.files?.length > 0) {
-      all_files = chat?.files?.push(file_id);
+    console.log(chat);
+    if (chat[0]?.files?.length > 0) {
+      all_files = [...chat[0].files, file_id];
     } else {
       all_files = [file_id];
     }
@@ -171,7 +191,7 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
               assistant_id: assistant.id,
             },
           },
-        }, 
+        },
         {
           new: true,
           upsert: true,
