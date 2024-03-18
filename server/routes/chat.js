@@ -164,7 +164,7 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
           "data.chatId": chatId,
         },
         {
-          $push: {
+          $addToSet: {
             "data.$.files": file_id,
             "data.$.file_name": file_name,
           },
@@ -518,6 +518,54 @@ router.post("/getfile", async (req, res) => {
         status: 200,
         message: "Success",
         data: response,
+      });
+    }
+  }
+});
+
+router.post("/deletefile", CheckUser, async (req, res) => {
+  const { userId, chatId, file_name } = req.body;
+  console.log("here", userId, chatId, file_name);
+  let response = null;
+
+  try {
+    const file_id_obj = await db.collection(collections.CHAT).aggregate([
+      {
+        $match: {
+          user: userId.toString(),
+        },
+      },
+      {
+        $unwind: "$data",
+      },
+      {
+        $match: {
+          "data.chatId": chatId,
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          file_index: {
+            $indexOfArray: ["$data.file_name", file_name]
+          }
+        }
+      }
+    ]).toArray();
+    let file_id = file_id_obj[0]?.data?.files[file_id_obj[0]?.file_index];
+    console.log(file_id);
+    response = await chat.deleteFile(userId, chatId, file_name, file_id);
+  } catch (err) {
+    res.status(500).json({
+      status: 500,
+      message: err,
+    });
+  } finally {
+    if (response) {
+      console.log(response);
+      res.status(200).json({
+        status: 200,
+        message: "Success",
       });
     }
   }

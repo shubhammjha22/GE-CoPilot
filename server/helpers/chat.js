@@ -339,4 +339,34 @@ export default {
       }
     });
   },
+  deleteFile: (userId, chatId, file_name, file_id) => {
+    console.log(userId, chatId, file_name, file_id)
+    return new Promise(async (resolve, reject) => {
+      try {
+        const result = await db.collection(collections.CHAT)
+          .updateOne(
+            {
+              user: userId.toString(),
+              "data.chatId": chatId
+            },
+            {
+              $pull: {
+                "data.$.file_name": file_name,
+                "data.$.files": file_id,
+              }
+            }
+          );
+  
+        if (result.modifiedCount === 0) {
+          // If no documents were modified, reject with an error
+          reject({ text: "No matching documents found" });
+          return;
+        }
+  
+        resolve(result);
+      } catch (err) {
+        reject(err); // Reject with the caught error
+      }
+    });
+  },
 };

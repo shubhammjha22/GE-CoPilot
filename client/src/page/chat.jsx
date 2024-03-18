@@ -239,7 +239,27 @@ const InputArea = ({
       }
     }
   };
-
+  const deleteFile = async (e) => {
+    let response = null;
+    console.log(_id);
+    try {
+      const file = e.target.textContent;
+      console.log(file, _id);
+      response = await instance.post("/api/chat/deletefile", {
+        chatId: _id,
+        file_name: file,
+      });
+      console.log(response?.data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      if (response?.status === 200) {
+        getFiles();
+      } else {
+        alert("File delete failed");
+      }
+    }
+  };
   useEffect(() => {
     const handleInput = (e) => {
       if (e.key === "Enter" && e.shiftKey) {
@@ -304,7 +324,9 @@ const InputArea = ({
                     documents?.map((doc, index) => {
                       return (
                         <div key={index} className="file">
-                          <p className="file-name">{doc}</p>
+                          <p className="file-name" onClick={deleteFile}>
+                            {doc}
+                          </p>
                         </div>
                       );
                     })}
