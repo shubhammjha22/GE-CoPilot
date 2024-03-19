@@ -496,7 +496,6 @@ export default {
   },
   updateUserProfile1: (email, firstName, lastName, image) => {
     return new Promise((resolve, reject) => {
-      console.log("In update", email, firstName, lastName, image);
       db.collection(collections.USER)
         .findOne({ email })
         .then((existingUser) => {
@@ -528,7 +527,6 @@ export default {
         })
         .then((uploadResult) => {
           if (uploadResult) {
-            console.log(uploadResult);
             return db.collection(collections.USER).updateOne(
               { email },
               {

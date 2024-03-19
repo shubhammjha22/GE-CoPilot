@@ -55,7 +55,7 @@ const CheckUser = async (req, res, next) => {
 const client = new OpenAI({
   apiKey: "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",
 });
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: "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"});
 
 router.get("/", (req, res) => {
   res.send("Welcome to chatGPT api v1");
@@ -64,7 +64,6 @@ router.get("/", (req, res) => {
 router.get("/upload", CheckUser, async (req, res) => {
   const { userId } = req.body;
   const { chatId } = req.query;
-  console.log(chatId, userId);
   let chat = await db.collection(collections.CHAT).findOne({
     user: userId.toString(),
     "data.chatId": chatId,
@@ -90,7 +89,6 @@ router.get("/upload", CheckUser, async (req, res) => {
 router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
   // take file object from frontend upload to openai and store id and file name to mongo db
   const { userId, chatId } = req.body;
-  console.log(req.file);
   const file = fs.createReadStream(req ? req.file.path : null);
   let response = null;
   try {
@@ -98,7 +96,6 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
       purpose: "assistants",
       file: file,
     });
-    console.log(response);
   } catch (err) {
     console.log(err);
     res.status(500).json({
@@ -141,7 +138,6 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
       ])
       .toArray();
     let all_files = [];
-    console.log(chat);
     if (chat[0]?.files?.length > 0) {
       all_files = [...chat[0].files, file_id];
     } else {
@@ -155,8 +151,7 @@ router.post("/upload", upload.single("file"), CheckUser, async (req, res) => {
       model: "gpt-4-0125-preview",
       file_ids: all_files,
     });
-    console.log(assistant);
-    if (chat) {
+    if (chat.length>0) {
       chatIdToSend = chatId; // Use existing chatId
       await db.collection(collections.CHAT).updateOne(
         {
@@ -235,7 +230,6 @@ router.post("/", CheckUser, async (req, res) => {
     if (response.openai.choices[0].message) {
       response.openai = response.openai.choices[0].message.content;
       let index = 0;
-      console.log(response);
       for (let c of response["openai"]) {
         if (index <= 1) {
           if (c == "\n") {
@@ -255,7 +249,6 @@ router.post("/", CheckUser, async (req, res) => {
       message: err,
     });
   } finally {
-    console.log(response);
     if (response?.db && response?.openai) {
       res.status(200).json({
         status: 200,
@@ -272,7 +265,6 @@ router.post("/", CheckUser, async (req, res) => {
 router.put("/", CheckUser, async (req, res) => {
   const { prompt, userId, chatId } = req.body;
   console.log("PUT is being called", req.body);
-  console.log(userId);
   let mes = {
     role: "system",
     content:
@@ -280,7 +272,6 @@ router.put("/", CheckUser, async (req, res) => {
   };
   let full = "";
   let message = await chat.Messages(userId, chatId);
-  console.log(message);
   message = message[0].chats;
   mes = [mes, ...message];
   mes = [
@@ -299,7 +290,6 @@ router.put("/", CheckUser, async (req, res) => {
     return obj.chatId === chatId;
   });
   new_chat = new_chat[0];
-  console.log("new chat", new_chat);
   const assistant_id = new_chat.assistant_id;
   try {
     if (assistant_id) {
@@ -313,20 +303,16 @@ router.put("/", CheckUser, async (req, res) => {
           },
         ],
       });
-      console.log(thread, assistant_id);
       const run = await client.beta.threads.runs.create(thread.id, {
         assistant_id: assistant_id,
       });
-      console.log(run);
       let final_run = "";
       while (final_run.status !== "completed") {
         final_run = await client.beta.threads.runs.retrieve(thread.id, run.id);
       }
       console.log(final_run.status);
       const messages = await client.beta.threads.messages.list(thread.id);
-      //console.log(messages.data[0].content[0].text.value);
       response = { openai: messages.data[0].content[0].text.value };
-      console.log(response.openai);
       if (response.openai) {
         let index = 0;
         for (let c of response["openai"]) {
@@ -342,7 +328,6 @@ router.put("/", CheckUser, async (req, res) => {
           }
           index++;
         }
-        //console.log("here in file");
         response.db = await chat.Response(
           prompt,
           response,
@@ -366,12 +351,9 @@ router.put("/", CheckUser, async (req, res) => {
         role: "assistant",
         content: full,
       };
-      //response.openai = response.openai.choices[0].message;
       if (response.openai) {
         response.openai = response.openai.content;
-        //console.log("Here", response.openai);
         let index = 0;
-        //  console.log(response['openai'])
         for (let c of response["openai"]) {
           if (index <= 1) {
             if (c == "\n") {
@@ -385,7 +367,6 @@ router.put("/", CheckUser, async (req, res) => {
           }
           index++;
         }
-        //console.log(chatId)
         response.db = await chat.Response(
           prompt,
           response,
@@ -402,9 +383,7 @@ router.put("/", CheckUser, async (req, res) => {
       message: err,
     });
   } finally {
-    console.log(response.db, response.openai);
     if (response?.db && response?.openai) {
-      console.log("first");
       res.status(200).json({
         status: 200,
         message: "Success",
@@ -497,7 +476,6 @@ router.delete("/all", CheckUser, async (req, res) => {
 
 router.post("/getfile", async (req, res) => {
   const { userId, chatId } = req.body;
-  console.log("here", userId, chatId);
   let response = null;
 
   try {
@@ -509,7 +487,6 @@ router.post("/getfile", async (req, res) => {
     });
   } finally {
     if (response) {
-      console.log(response);
       res.status(200).json({
         status: 200,
         message: "Success",
@@ -521,7 +498,6 @@ router.post("/getfile", async (req, res) => {
 
 router.post("/deletefile", CheckUser, async (req, res) => {
   const { userId, chatId, file_name } = req.body;
-  console.log("here", userId, chatId, file_name);
   let response = null;
 
   try {
@@ -549,17 +525,15 @@ router.post("/deletefile", CheckUser, async (req, res) => {
       }
     ]).toArray();
     let file_id = file_id_obj[0]?.data?.files[file_id_obj[0]?.file_index];
-    console.log(file_id);
     response = await chat.deleteFile(userId, chatId, file_name, file_id);
-    console.log(response);
   } catch (err) {
+    console.log(err);
     res.status(500).json({
       status: 500,
       message: err,
     });
   } finally {
     if (response) {
-      console.log(response);
       res.status(200).json({
         status: 200,
         message: "Success",

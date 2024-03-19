@@ -43,7 +43,7 @@ const SignupComponent = () => {
 
   const formHandle = async (e) => {
     e?.preventDefault()
-    if (formData?.pass.length >= 8 && formData?.email.endsWith("@grantengine.com")) {
+    if (formData?.pass.length >= 8 && (formData?.email.endsWith("@protondatalabs.com") || formData?.email.endsWith("@grantengine.com"))) {
       let res = null
       try {
         res = await instance.post('/api/user/signup', formData)

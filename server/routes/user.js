@@ -47,9 +47,7 @@ const CheckLogged = async (req, res, next) => {
 };
 
 router.post("/update_profile", async (req, res) => {
-  console.log("first");
   const { email, firstName, lastName, profilePicture } = req.body;
-  console.log(email, firstName, lastName, profilePicture);
   const done = await db.collection(collections.USER).updateOne(
     { email },
     {
@@ -60,7 +58,6 @@ router.post("/update_profile", async (req, res) => {
       },
     }
   );
-  console.log(done);
 });
 
 router.get("/checkLogged", CheckLogged, (req, res) => {
@@ -639,14 +636,12 @@ router.post("/send_otp", async (req, res) => {
 });
 
 router.post("/verify_otp", async (req, res) => {
-  console.log(req.body?.email, req.body?.otp);
   if (req.body?.email && req.body?.otp) {
     let response = null;
     try {
       response = await db.collection(collections.TEMP).findOne({
         email: req.body.email,
       });
-      console.log(response);
     } catch (err) {
       if (err?.status === 422) {
         return res.status(422).json({
@@ -660,7 +655,6 @@ router.post("/verify_otp", async (req, res) => {
         });
       }
     } finally {
-      console.log(response.otp, req.body.otp)
       if (response.otp == req.body.otp) {
         const user = await db.collection(collections.USER).findOne({
           email: req.body.email,

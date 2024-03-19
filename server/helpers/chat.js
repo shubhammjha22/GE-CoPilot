@@ -74,7 +74,6 @@ export default {
       } finally {
         if (res) {
           res.chatId = chatId;
-          console.log(res);
           resolve(res);
         } else {
           reject({ text: "DB gets something wrong" });
@@ -83,7 +82,6 @@ export default {
     });
   },
   Response: (prompt, { openai }, userId, chatId, assistant_id, file_name) => {
-    console.log(file_name, " ------------------------------------");
     return new Promise(async (resolve, reject) => {
       let res = null;
       try {
@@ -123,12 +121,10 @@ export default {
           updateObj
         );
       } catch (err) {
-        console.log(err);
         reject(err);
       } finally {
         if (res) {
           res.chatId = chatId;
-          //console.log(chatId);
           resolve(res);
         } else {
           reject({ text: "DB gets something wrong" });
@@ -302,7 +298,6 @@ export default {
   },
   //Get all file name
   getFiles: (userId, chatId) => {
-    console.log(userId, chatId);
     return new Promise(async (resolve, reject) => {
       let res = await db
         .collection(collections.CHAT)
@@ -333,7 +328,6 @@ export default {
         });
 
       if (Array.isArray(res)) {
-        console.log(res);
         resolve(res);
       } else {
         reject({ text: "DB Getting Some Error" });
@@ -344,7 +338,6 @@ export default {
     const client = new OpenAI({
       apiKey: "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",
     });
-    console.log(userId, chatId, file_name, file_id);
     return new Promise(async (resolve, reject) => {
       try {
         const result = await db.collection(collections.CHAT).updateOne(
@@ -359,7 +352,6 @@ export default {
             },
           }
         );
-        console.log(result);
         const files_data = await db.collection(collections.CHAT).aggregate([
           {
             $match: {
@@ -381,7 +373,6 @@ export default {
             },
           },
         ]).toArray();
-        console.log("FIles data vro: ", files_data);
         let assistant = null;
         if (files_data[0]?.file_id?.length === 0) {
           assistant = {
@@ -397,7 +388,6 @@ export default {
             file_ids: files_data[0]?.file_id,
           });
         }
-        console.log(assistant.id);
         const result_chat_update = await db
           .collection(collections.CHAT)
           .updateOne(
