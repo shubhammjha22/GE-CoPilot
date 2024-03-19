@@ -1,6 +1,7 @@
 import { db } from "../db/connection.js";
 import collections from "../db/collections.js";
 import { ObjectId } from "mongodb";
+import OpenAI from "openai";
 
 export default {
   newResponse: (prompt, { openai }, userId) => {
@@ -340,29 +341,80 @@ export default {
     });
   },
   deleteFile: (userId, chatId, file_name, file_id) => {
-    console.log(userId, chatId, file_name, file_id)
+    const client = new OpenAI({
+      apiKey: "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",
+    });
+    console.log(userId, chatId, file_name, file_id);
     return new Promise(async (resolve, reject) => {
       try {
-        const result = await db.collection(collections.CHAT)
+        const result = await db.collection(collections.CHAT).updateOne(
+          {
+            user: userId.toString(),
+            "data.chatId": chatId,
+          },
+          {
+            $pull: {
+              "data.$.file_name": file_name,
+              "data.$.files": file_id,
+            },
+          }
+        );
+        console.log(result);
+        const files_data = await db.collection(collections.CHAT).aggregate([
+          {
+            $match: {
+              user: userId.toString(),
+            },
+          },
+          {
+            $unwind: "$data",
+          },
+          {
+            $match: {
+              "data.chatId": chatId,
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              file_id: "$data.files",
+            },
+          },
+        ]).toArray();
+        console.log("FIles data vro: ", files_data);
+        let assistant = null;
+        if (files_data[0]?.file_id?.length === 0) {
+          assistant = {
+            id: null
+          }
+        } else {
+          assistant = await client.beta.assistants.create({
+            name: "GE CoPilot",
+            instructions:
+              "You are a helpful and that answers what is asked. Retrieve the relevant information from the files.",
+            tools: [{ type: "retrieval" }, { type: "code_interpreter" }],
+            model: "gpt-4-0125-preview",
+            file_ids: files_data[0]?.file_id,
+          });
+        }
+        console.log(assistant.id);
+        const result_chat_update = await db
+          .collection(collections.CHAT)
           .updateOne(
             {
               user: userId.toString(),
-              "data.chatId": chatId
+              "data.chatId": chatId,
             },
             {
-              $pull: {
-                "data.$.file_name": file_name,
-                "data.$.files": file_id,
-              }
+              $set: {
+                "data.$.assistant_id": assistant.id,
+              },
             }
           );
-  
-        if (result.modifiedCount === 0) {
-          // If no documents were modified, reject with an error
+        if (result_chat_update.modifiedCount === 0) {
           reject({ text: "No matching documents found" });
           return;
         }
-  
         resolve(result);
       } catch (err) {
         reject(err); // Reject with the caught error

@@ -53,7 +53,7 @@ const CheckUser = async (req, res, next) => {
 };
 
 const client = new OpenAI({
-  apiKey: "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",
+  apiKey: "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",
 });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -355,11 +355,7 @@ router.put("/", CheckUser, async (req, res) => {
       response.openai = await openai.chat.completions.create({
         model: "gpt-4-0125-preview",
         messages: mes,
-        temperature: 0.68,
-        max_tokens: 256,
         top_p: 0.52,
-        frequency_penalty: 0,
-        presence_penalty: 0,
         stream: true,
       });
       for await (const part of response.openai) {
@@ -555,6 +551,7 @@ router.post("/deletefile", CheckUser, async (req, res) => {
     let file_id = file_id_obj[0]?.data?.files[file_id_obj[0]?.file_index];
     console.log(file_id);
     response = await chat.deleteFile(userId, chatId, file_name, file_id);
+    console.log(response);
   } catch (err) {
     res.status(500).json({
       status: 500,
