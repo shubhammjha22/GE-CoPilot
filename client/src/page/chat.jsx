@@ -184,6 +184,29 @@ const InputArea = ({
       }
     }
   };
+
+  const deleteFile = async (e) => {
+    let response = null;
+    console.log(_id);
+    try {
+      const file = e.target.textContent;
+      console.log(file, _id);
+      response = await instance.post("/api/chat/deletefile", {
+        chatId: _id,
+        file_name: file,
+      });
+      console.log(response?.data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      if (response?.status === 200) {
+        getFiles();
+      } else {
+        alert("File delete failed");
+      }
+    }
+  };
+
   const FormHandle = async () => {
     prompt = last_prompt;
     if (prompt?.length > 0) {
@@ -239,27 +262,7 @@ const InputArea = ({
       }
     }
   };
-  const deleteFile = async (e) => {
-    let response = null;
-    console.log(_id);
-    try {
-      const file = e.target.textContent;
-      console.log(file, _id);
-      response = await instance.post("/api/chat/deletefile", {
-        chatId: _id,
-        file_name: file,
-      });
-      console.log(response?.data);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      if (response?.status === 200) {
-        getFiles();
-      } else {
-        alert("File delete failed");
-      }
-    }
-  };
+  
   useEffect(() => {
     const handleInput = (e) => {
       if (e.key === "Enter" && e.shiftKey) {
@@ -319,7 +322,7 @@ const InputArea = ({
                 </label>
               </div>
               <div className="box">
-                <div className="files">
+                {/* <div className="files">
                   {documents?.length > 0 &&
                     documents?.map((doc, index) => {
                       return (
@@ -330,7 +333,7 @@ const InputArea = ({
                         </div>
                       );
                     })}
-                </div>
+                </div> */}
                 <textarea
                   ref={textAreaRef}
                   value={prompt}

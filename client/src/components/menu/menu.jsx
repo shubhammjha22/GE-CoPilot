@@ -17,7 +17,7 @@ import { emptyUser } from "../../redux/user";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { activePage, addHistory } from "../../redux/history";
-import ReactS3 from "react-s3";
+import ReactS3, { deleteFile } from "react-s3";
 import instance from "../../config/instance";
 import "./style.scss";
 import { Buffer } from "buffer";
@@ -55,7 +55,8 @@ const Menu = ({ changeColorMode }) => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [firstName, setFirstName] = useState("Anonymous ");
   const [lastName, setlastName] = useState("User");
-  const { documents, setDocuments } = useContext(documentsContext);
+  const { documents, getFiles } = useContext(documentsContext);
+  const { _id } = useSelector(state => state.messages)
 
   const logOut = async () => {
     if (window.confirm("Do you want log out")) {
@@ -127,6 +128,27 @@ const Menu = ({ changeColorMode }) => {
     });
   });
 
+  const deleteFile = async (doc) => {
+    let response = null;
+    console.log(_id);
+    try {
+      console.log(_id);
+      response = await instance.post("/api/chat/deletefile", {
+        chatId: _id,
+        file_name: doc,
+      });
+      console.log(response?.data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      if (response?.status === 200) {
+        getFiles();
+      } else {
+        alert("File delete failed");
+      }
+    }
+  };
+
   // History Get
   useEffect(() => {
     const getHistory = async () => {
@@ -160,6 +182,7 @@ const Menu = ({ changeColorMode }) => {
         changeColorMode={changeColorMode}
         documentRef={documentRef}
         documents={documents}
+        deleteFile={deleteFile}
       />
 
       <header>
@@ -241,18 +264,18 @@ const Menu = ({ changeColorMode }) => {
         </div>
 
         <div className="actions">
-          {/* <button
+          <button
             onClick={() => {
               if (documentRef?.current) {
                 documentRef.current.classList.add("clicked");
                 documentRef.current.style.display = "flex";
               }
-              getDocuments();
+              getFiles();
             }}
           >
             <File />
             Attached Documents
-          </button> */}
+          </button>
           {history?.length > 0 && (
             <>
               {confirm ? (
@@ -317,7 +340,6 @@ const Modal = ({ changeColorMode, settingRef }) => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const user = useSelector((state) => state.user);
-
   const updateUser = async () => {
     // Gather input values
     const firstName = document.getElementById("first-name").value;
@@ -361,6 +383,8 @@ const Modal = ({ changeColorMode, settingRef }) => {
       window.location.reload();
     }
   };
+
+  
 
   const deleteAccount = async () => {
     if (window.confirm("Do you want delete your account")) {
@@ -460,7 +484,7 @@ const Modal = ({ changeColorMode, settingRef }) => {
   );
 };
 
-const DocumentModal = ({ changeColorMode, documentRef, documents }) => {
+const DocumentModal = ({ changeColorMode, documentRef, documents, deleteFile }) => {
   return (
     <div
       className="settingsModal"
@@ -491,10 +515,16 @@ const DocumentModal = ({ changeColorMode, documentRef, documents }) => {
             documents.map((doc, index) => {
               return (
                 doc && (
-                  <div key={index}>
+                  <div
+                    key={index}
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
                     <p>
                       {index}. {doc}
                     </p>
+                    <div style={{ cursor: "pointer" }} onClick={() =>deleteFile(doc)}>
+                      <Xicon />
+                    </div>
                   </div>
                 )
               );
