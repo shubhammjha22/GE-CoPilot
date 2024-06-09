@@ -56,7 +56,7 @@ const Menu = ({ changeColorMode }) => {
   const [firstName, setFirstName] = useState("Anonymous ");
   const [lastName, setlastName] = useState("User");
   const { documents, getFiles } = useContext(documentsContext);
-  const { _id } = useSelector(state => state.messages)
+  const { _id } = useSelector((state) => state.messages);
 
   const logOut = async () => {
     if (window.confirm("Do you want log out")) {
@@ -340,6 +340,9 @@ const Modal = ({ changeColorMode, settingRef }) => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const user = useSelector((state) => state.user);
+  const [theme, setTheme] = useState(
+    localStorage.getItem("darkMode") === null ? false : true
+  );
   const updateUser = async () => {
     // Gather input values
     const firstName = document.getElementById("first-name").value;
@@ -383,8 +386,6 @@ const Modal = ({ changeColorMode, settingRef }) => {
       window.location.reload();
     }
   };
-
-  
 
   const deleteAccount = async () => {
     if (window.confirm("Do you want delete your account")) {
@@ -446,15 +447,17 @@ const Modal = ({ changeColorMode, settingRef }) => {
           </div>
           <div className="content-submit">
             <div>
-              <p>Dark mode</p>
+              <p>{theme ? "Dark Mode" : "Light Mode"}</p>
               <button
                 onClick={() => {
                   let mode = localStorage.getItem("darkMode");
+                  console.log(mode);
                   if (mode) {
                     changeColorMode(false);
                   } else {
                     changeColorMode(true);
                   }
+                  setTheme(!theme);
                 }}
                 role="switch"
                 type="button"
@@ -484,7 +487,12 @@ const Modal = ({ changeColorMode, settingRef }) => {
   );
 };
 
-const DocumentModal = ({ changeColorMode, documentRef, documents, deleteFile }) => {
+const DocumentModal = ({
+  changeColorMode,
+  documentRef,
+  documents,
+  deleteFile,
+}) => {
   return (
     <div
       className="settingsModal"
@@ -522,7 +530,10 @@ const DocumentModal = ({ changeColorMode, documentRef, documents, deleteFile }) 
                     <p>
                       {index}. {doc}
                     </p>
-                    <div style={{ cursor: "pointer" }} onClick={() =>deleteFile(doc)}>
+                    <div
+                      style={{ cursor: "pointer" }}
+                      onClick={() => deleteFile(doc)}
+                    >
                       <Xicon />
                     </div>
                   </div>

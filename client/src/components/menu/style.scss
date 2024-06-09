@@ -512,6 +512,16 @@ header {
         }
       }
 
+      // Added proper color change in the Setting Modal
+      .content {
+        .content-input{
+          color: white;
+          input{
+            color: white;
+          }
+        }
+      }
+
       .ceneter {
         p {
           color: rgba(197, 197, 210, 1);
