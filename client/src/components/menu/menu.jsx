@@ -27,10 +27,7 @@ import { documentsContext } from "./../../App";
 
 const S3_BUCKET = "grant-copilot";
 const REGION = "us-east-1";
-//Commenting out this as We can't push secret keys to github
-
-// const ACCESS_KEY = "AKIAY7BEJYRC3YUJH3FO";
-// const SECRET_ACCESS_KEY = "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";
+//Removing out this as We can't push secret keys to github
 
 const config = {
   bucketName: S3_BUCKET,
